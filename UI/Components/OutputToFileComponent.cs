@@ -102,7 +102,8 @@ namespace LiveSplit.UI.Components {
 
 		const string FILE_INFO_GAMENAME = @"GameName.txt";
 		const string FILE_INFO_CATEGORYNAME = @"CategoryName.txt";
-		const string FILE_INFO_SPLITCOUNT = @"TotalSplits_{1}.txt";
+		const string FILE_INFO_PLATFORMNAME = @"PlatformName.txt";
+        const string FILE_INFO_SPLITCOUNT = @"TotalSplits_{1}.txt";
 		const string FILE_INFO_ATTEMPTCOUNT = @"AttemptCount.txt";
 		const string FILE_INFO_FINISHEDRUNSCOUNT = @"FinishedRunsCount.txt";
 		const string FILE_TIMER_RUN = @"Timers\{0}\RunTimer.txt";
@@ -542,6 +543,7 @@ namespace LiveSplit.UI.Components {
 			Cache["AttemptHistoryCount"] = state.Run.AttemptCount;
 			Cache["GameName"] = state.Run.GameName;
 			Cache["CategoryName"] = state.Run.CategoryName;
+			Cache["PlatformName"] = state.Run.Metadata.PlatformName;
 			Cache["FolderPath"] = Settings.FolderPath;
 			Cache["SplitsBefore"] = Settings.SplitsBefore;
 			Cache["SplitsAfter"] = Settings.SplitsAfter;
@@ -549,6 +551,7 @@ namespace LiveSplit.UI.Components {
 			if (Cache.HasChanged) {
 				MakeFile(FILE_INFO_GAMENAME, state.Run.GameName);
 				MakeFile(FILE_INFO_CATEGORYNAME, state.Run.CategoryName);
+				MakeFile(FILE_INFO_PLATFORMNAME, state.Run.Metadata.PlatformName);
 				MakeFile(FILE_INFO_ATTEMPTCOUNT, state.Run.AttemptCount.ToString());
 				int finishedRunsInHistory = state.Run.AttemptHistory.Where(x => x.Time.RealTime != null).Count();
 				MakeFile(FILE_INFO_FINISHEDRUNSCOUNT, (finishedRunsInHistory + (state.CurrentPhase == TimerPhase.Ended ? 1 : 0)).ToString());
