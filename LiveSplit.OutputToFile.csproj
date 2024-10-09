@@ -58,6 +58,7 @@
     <Compile Include="UI\Components\OutputToFileSettings.Designer.cs">
       <DependentUpon>OutputToFileSettings.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\Components\TimeFormatter.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="UI\Components\OutputToFileSettings.resx">

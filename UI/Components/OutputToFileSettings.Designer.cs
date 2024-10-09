@@ -43,6 +43,7 @@
 			this.numericUpDownSplitListAfter = new System.Windows.Forms.NumericUpDown();
 			this.labelSplitListBefore = new System.Windows.Forms.Label();
 			this.labelSplitListAfter = new System.Windows.Forms.Label();
+			this.groupBoxTimeFormats = new System.Windows.Forms.GroupBox();
 			this.tableLayoutPanelTop.SuspendLayout();
 			this.groupBoxFolderPath.SuspendLayout();
 			this.tableLayoutPanelFolderPath.SuspendLayout();
@@ -61,15 +62,16 @@
 			this.tableLayoutPanelTop.Controls.Add(this.groupBoxFolderPath, 0, 0);
 			this.tableLayoutPanelTop.Controls.Add(this.groupBoxOutputSelection, 0, 1);
 			this.tableLayoutPanelTop.Controls.Add(this.groupBoxSplitList, 0, 2);
+			this.tableLayoutPanelTop.Controls.Add(this.groupBoxTimeFormats, 0, 3);
 			this.tableLayoutPanelTop.Location = new System.Drawing.Point(0, 0);
 			this.tableLayoutPanelTop.Name = "tableLayoutPanelTop";
 			this.tableLayoutPanelTop.RowCount = 5;
 			this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 51F));
 			this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 74F));
-			this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 78F));
-			this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 71F));
+			this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 80F));
+			this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 118F));
 			this.tableLayoutPanelTop.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 8F));
-			this.tableLayoutPanelTop.Size = new System.Drawing.Size(326, 299);
+			this.tableLayoutPanelTop.Size = new System.Drawing.Size(454, 331);
 			this.tableLayoutPanelTop.TabIndex = 0;
 			// 
 			// groupBoxFolderPath
@@ -82,7 +84,7 @@
 			this.groupBoxFolderPath.Controls.Add(this.tableLayoutPanelFolderPath);
 			this.groupBoxFolderPath.Location = new System.Drawing.Point(3, 3);
 			this.groupBoxFolderPath.Name = "groupBoxFolderPath";
-			this.groupBoxFolderPath.Size = new System.Drawing.Size(320, 45);
+			this.groupBoxFolderPath.Size = new System.Drawing.Size(448, 45);
 			this.groupBoxFolderPath.TabIndex = 0;
 			this.groupBoxFolderPath.TabStop = false;
 			this.groupBoxFolderPath.Text = "Folder Path";
@@ -102,7 +104,7 @@
 			this.tableLayoutPanelFolderPath.RowCount = 1;
 			this.tableLayoutPanelFolderPath.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
 			this.tableLayoutPanelFolderPath.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.tableLayoutPanelFolderPath.Size = new System.Drawing.Size(314, 26);
+			this.tableLayoutPanelFolderPath.Size = new System.Drawing.Size(442, 26);
 			this.tableLayoutPanelFolderPath.TabIndex = 0;
 			// 
 			// textBoxFolderPath
@@ -110,17 +112,17 @@
 			this.textBoxFolderPath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
 			this.textBoxFolderPath.Location = new System.Drawing.Point(3, 3);
 			this.textBoxFolderPath.Name = "textBoxFolderPath";
-			this.textBoxFolderPath.Size = new System.Drawing.Size(210, 20);
+			this.textBoxFolderPath.Size = new System.Drawing.Size(298, 20);
 			this.textBoxFolderPath.TabIndex = 0;
 			// 
 			// buttonFolderPath
 			// 
 			this.buttonFolderPath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
 			this.buttonFolderPath.AutoSize = true;
-			this.buttonFolderPath.Location = new System.Drawing.Point(219, 3);
+			this.buttonFolderPath.Location = new System.Drawing.Point(307, 3);
 			this.buttonFolderPath.MinimumSize = new System.Drawing.Size(75, 15);
 			this.buttonFolderPath.Name = "buttonFolderPath";
-			this.buttonFolderPath.Size = new System.Drawing.Size(92, 20);
+			this.buttonFolderPath.Size = new System.Drawing.Size(132, 20);
 			this.buttonFolderPath.TabIndex = 1;
 			this.buttonFolderPath.Text = "Browse";
 			this.buttonFolderPath.UseVisualStyleBackColor = true;
@@ -136,10 +138,10 @@
 			this.groupBoxOutputSelection.Controls.Add(this.checkBoxOutputTimer);
 			this.groupBoxOutputSelection.Location = new System.Drawing.Point(3, 54);
 			this.groupBoxOutputSelection.Name = "groupBoxOutputSelection";
-			this.groupBoxOutputSelection.Size = new System.Drawing.Size(320, 68);
+			this.groupBoxOutputSelection.Size = new System.Drawing.Size(448, 68);
 			this.groupBoxOutputSelection.TabIndex = 2;
 			this.groupBoxOutputSelection.TabStop = false;
-			this.groupBoxOutputSelection.Text = "Additional Output";
+			this.groupBoxOutputSelection.Text = "Output";
 			// 
 			// checkBoxOutputSubsplits
 			// 
@@ -186,7 +188,7 @@
 			this.groupBoxSplitList.Controls.Add(this.tableLayoutPanelSplitList);
 			this.groupBoxSplitList.Location = new System.Drawing.Point(3, 128);
 			this.groupBoxSplitList.Name = "groupBoxSplitList";
-			this.groupBoxSplitList.Size = new System.Drawing.Size(320, 72);
+			this.groupBoxSplitList.Size = new System.Drawing.Size(448, 74);
 			this.groupBoxSplitList.TabIndex = 1;
 			this.groupBoxSplitList.TabStop = false;
 			this.groupBoxSplitList.Text = "Split List Writing";
@@ -200,19 +202,19 @@
 			this.tableLayoutPanelSplitList.Controls.Add(this.numericUpDownSplitListAfter, 1, 1);
 			this.tableLayoutPanelSplitList.Controls.Add(this.labelSplitListBefore, 0, 0);
 			this.tableLayoutPanelSplitList.Controls.Add(this.labelSplitListAfter, 0, 1);
-			this.tableLayoutPanelSplitList.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.tableLayoutPanelSplitList.Dock = System.Windows.Forms.DockStyle.Top;
 			this.tableLayoutPanelSplitList.Location = new System.Drawing.Point(3, 16);
 			this.tableLayoutPanelSplitList.Name = "tableLayoutPanelSplitList";
 			this.tableLayoutPanelSplitList.RowCount = 2;
 			this.tableLayoutPanelSplitList.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
 			this.tableLayoutPanelSplitList.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 50F));
-			this.tableLayoutPanelSplitList.Size = new System.Drawing.Size(314, 53);
+			this.tableLayoutPanelSplitList.Size = new System.Drawing.Size(442, 53);
 			this.tableLayoutPanelSplitList.TabIndex = 0;
 			// 
 			// numericUpDownSplitListBefore
 			// 
 			this.numericUpDownSplitListBefore.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.numericUpDownSplitListBefore.Location = new System.Drawing.Point(191, 3);
+			this.numericUpDownSplitListBefore.Location = new System.Drawing.Point(319, 3);
 			this.numericUpDownSplitListBefore.Name = "numericUpDownSplitListBefore";
 			this.numericUpDownSplitListBefore.Size = new System.Drawing.Size(120, 20);
 			this.numericUpDownSplitListBefore.TabIndex = 0;
@@ -226,7 +228,7 @@
 			// numericUpDownSplitListAfter
 			// 
 			this.numericUpDownSplitListAfter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-			this.numericUpDownSplitListAfter.Location = new System.Drawing.Point(191, 29);
+			this.numericUpDownSplitListAfter.Location = new System.Drawing.Point(319, 29);
 			this.numericUpDownSplitListAfter.Name = "numericUpDownSplitListAfter";
 			this.numericUpDownSplitListAfter.Size = new System.Drawing.Size(120, 20);
 			this.numericUpDownSplitListAfter.TabIndex = 1;
@@ -243,7 +245,7 @@
 			this.labelSplitListBefore.AutoSize = true;
 			this.labelSplitListBefore.Location = new System.Drawing.Point(3, 6);
 			this.labelSplitListBefore.Name = "labelSplitListBefore";
-			this.labelSplitListBefore.Size = new System.Drawing.Size(181, 13);
+			this.labelSplitListBefore.Size = new System.Drawing.Size(257, 13);
 			this.labelSplitListBefore.TabIndex = 2;
 			this.labelSplitListBefore.Text = "Splits before current";
 			// 
@@ -253,9 +255,21 @@
 			this.labelSplitListAfter.AutoSize = true;
 			this.labelSplitListAfter.Location = new System.Drawing.Point(3, 33);
 			this.labelSplitListAfter.Name = "labelSplitListAfter";
-			this.labelSplitListAfter.Size = new System.Drawing.Size(181, 13);
+			this.labelSplitListAfter.Size = new System.Drawing.Size(257, 13);
 			this.labelSplitListAfter.TabIndex = 3;
 			this.labelSplitListAfter.Text = "Splits after current";
+			// 
+			// groupBoxTimeFormats
+			// 
+			this.groupBoxTimeFormats.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.groupBoxTimeFormats.Location = new System.Drawing.Point(3, 208);
+			this.groupBoxTimeFormats.Name = "groupBoxTimeFormats";
+			this.groupBoxTimeFormats.Size = new System.Drawing.Size(448, 112);
+			this.groupBoxTimeFormats.TabIndex = 2;
+			this.groupBoxTimeFormats.TabStop = false;
+			this.groupBoxTimeFormats.Text = "Time Formats";
 			// 
 			// OutputToFileSettings
 			// 
@@ -264,7 +278,7 @@
 			this.AutoSize = true;
 			this.Controls.Add(this.tableLayoutPanelTop);
 			this.Name = "OutputToFileSettings";
-			this.Size = new System.Drawing.Size(329, 330);
+			this.Size = new System.Drawing.Size(457, 619);
 			this.Load += new System.EventHandler(this.OutputToFileSettings_Load);
 			this.tableLayoutPanelTop.ResumeLayout(false);
 			this.tableLayoutPanelTop.PerformLayout();
@@ -301,5 +315,6 @@
 		private System.Windows.Forms.Label labelSplitListAfter;
 		private System.Windows.Forms.CheckBox checkBoxOutputSplitList;
 		private System.Windows.Forms.CheckBox checkBoxOutputSubsplits;
+		private System.Windows.Forms.GroupBox groupBoxTimeFormats;
 	}
 }
