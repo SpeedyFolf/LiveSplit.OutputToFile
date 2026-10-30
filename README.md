@@ -62,7 +62,7 @@ After is the number of splits after the current one. It's `-` before the timer s
 
 `Name.txt` and `Names.txt` give split names as shown: without their leading dashes, or as their section's name (see [Split Names](#split-names)). `Name_Raw.txt` and `Names_Raw.txt` give them exactly as typed in LiveSplit.
 
-Every file in a list has one line per split, so text sources placed side by side line up. A line with nothing to show is blank. `Names_Indent_0.txt`, `Names_Indent_1.txt`, … have a split's name only on the lines of splits with that many dashes, so each depth can be its own text source, indented differently.
+Every file in a list has one line per split, so text sources placed side by side line up. A line with nothing to show is blank. `Names_Indent_0.txt`, `Names_Indent_1.txt`, … have a split's name only on the lines of splits with that many dashes, so each depth can be its own text source, indented differently. `Numbers.txt` has each split's number, counting from 1, as `Number.txt` does: in `SansSubsplits` the sections are numbered 1, 2, 3, …. The other folders than `AllSplits` also give each line's number in the folders with more splits: `Numbers_AllSplits.txt`, `Numbers_SansSubsplits_Level2.txt`, and so on. A section's number there is that of its last split, so in `SansSubsplits`, `Numbers_AllSplits.txt` might read 3, 5, 9.
 
 `CompletedSplits` has the same files as `SplitList`, except `Highlight_CurrentSplit.txt` and the `Time_…_Upcoming.txt` files, since none of its splits are current or upcoming, and `Highlight_ScrolledToSplit.txt`, since it doesn't scroll.
 
@@ -136,6 +136,7 @@ This is the tree for splits with three levels of subsplits, one variable, Varian
 |   |   |   Names_Indent_2.txt
 |   |   |   Names_Indent_3.txt
 |   |   |   Names_Raw.txt
+|   |   |   Numbers.txt
 |   |   |   
 |   |   +---GameTime
 |   |   |   |   Delta_Gold.txt
@@ -353,6 +354,7 @@ This is the tree for splits with three levels of subsplits, one variable, Varian
 |   |   |   Names_Indent_2.txt
 |   |   |   Names_Indent_3.txt
 |   |   |   Names_Raw.txt
+|   |   |   Numbers.txt
 |   |   |   
 |   |   +---GameTime
 |   |   |   |   Delta_Gold.txt
@@ -402,6 +404,10 @@ This is the tree for splits with three levels of subsplits, one variable, Varian
 |   |   |   Names.txt
 |   |   |   Names_Indent_0.txt
 |   |   |   Names_Raw.txt
+|   |   |   Numbers.txt
+|   |   |   Numbers_AllSplits.txt
+|   |   |   Numbers_SansSubsplits_Level2.txt
+|   |   |   Numbers_SansSubsplits_Level3.txt
 |   |   |   
 |   |   +---GameTime
 |   |   |   |   Delta_Gold.txt
@@ -442,6 +448,9 @@ This is the tree for splits with three levels of subsplits, one variable, Varian
 |   |   |   Names_Indent_0.txt
 |   |   |   Names_Indent_1.txt
 |   |   |   Names_Raw.txt
+|   |   |   Numbers.txt
+|   |   |   Numbers_AllSplits.txt
+|   |   |   Numbers_SansSubsplits_Level3.txt
 |   |   |   
 |   |   +---GameTime
 |   |   |   |   Delta_Gold.txt

@@ -54,11 +54,9 @@ namespace LiveSplit.UI.Components.OutputToFile {
 		/// The last split is a member of every level, so there is one for every split.
 		/// </summary>
 		protected int MemberAtOrAfter(int level, int splitIndex) {
-			List<int> indices = Levels[level].Indices;
-			for (int i = 0; i < indices.Count; i++) {
-				if (indices[i] >= splitIndex) {
-					return i;
-				}
+			int[] members = Levels[level].MembersAtOrAfter;
+			if (splitIndex >= 0 && splitIndex < members.Length) {
+				return members[splitIndex];
 			}
 			throw new InvalidOperationException($"Level {level} has no member at or after split {splitIndex}: the levels don't match the run.");
 		}
@@ -147,20 +145,23 @@ namespace LiveSplit.UI.Components.OutputToFile {
 		/// Write to file, filling {0} with the timing method, {1} with the level's tag and {3} with the comparison's folder
 		/// </summary>
 		protected void MakeFile(string fileName, string contents, TimingMethod? method, int subsplitLevel, string comparisonFolder) {
-			string subsplitLevelTag;
-			if (subsplitLevel == Levels.Count - 1) {
-				subsplitLevelTag = "AllSplits";
-			}
-			else if (subsplitLevel == 0) {
-				subsplitLevelTag = "SansSubsplits";
-			}
-			else {
-				// Named after the depth it leaves out: level 1 drops the splits with 2+ dashes
-				subsplitLevelTag = "SansSubsplits_Level" + (subsplitLevel + 1);
-			}
-			// {2} is Names_Indent's depth, which IndentFile fills before this
-			string file = string.Format(fileName, method.ToString(), subsplitLevelTag, "", comparisonFolder);
+			// {2} is filled before this: Names_Indent's depth by IndentFile, Numbers_'s level by NumbersFile
+			string file = string.Format(fileName, method.ToString(), LevelTag(subsplitLevel), "", comparisonFolder);
 			MakeFile(file, contents);
+		}
+
+		/// <summary>
+		/// The tag that names a level's folders and files
+		/// </summary>
+		protected string LevelTag(int subsplitLevel) {
+			if (subsplitLevel == Levels.Count - 1) {
+				return "AllSplits";
+			}
+			if (subsplitLevel == 0) {
+				return "SansSubsplits";
+			}
+			// Named after the depth it leaves out: level 1 drops the splits with 2+ dashes
+			return "SansSubsplits_Level" + (subsplitLevel + 1);
 		}
 
 		/// <summary>

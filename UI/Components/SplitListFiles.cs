@@ -20,6 +20,8 @@ namespace LiveSplit.UI.Components.OutputToFile {
 
 		const string FILE_LIST_NAMES = @"{1}\Names.txt";
 		const string FILE_LIST_NAMES_RAW = @"{1}\Names_Raw.txt";
+		const string FILE_LIST_NUMBERS = @"{1}\Numbers.txt";
+		const string FILE_LIST_NUMBERS_IN_LEVEL = @"{1}\Numbers_{2}.txt";
 		const string FILE_LIST_WHITESPACE = @"{1}\Names_Indent_{2}.txt";
 		const string FILE_LIST_FINISH_TIME_LIVE = @"{1}\{0}\Time_Run_Current.txt";
 		const string FILE_LIST_GOLD_DELTA = @"{1}\{0}\Delta_Gold.txt";
@@ -108,7 +110,8 @@ namespace LiveSplit.UI.Components.OutputToFile {
 			int currentSubsplitIndex = GetCurrentSubsplitIndex(lvl);
 			int previousSubsplitIndex = GetPreviousSubsplitIndex(lvl);
 			int scrolledToIndex = ScrolledToMember(lvl);
-			var lines = new ListLines(Levels.Comparisons, upcoming, lvl + 1);
+			string[] finerLevels = Enumerable.Range(lvl + 1, Levels.Count - lvl - 1).Select(LevelTag).ToArray();
+			var lines = new ListLines(Levels.Comparisons, upcoming, lvl + 1, finerLevels);
 
 			for (int spl = first; spl <= last; spl++) {
 				AppendNames(lines, lvl, spl);
@@ -132,11 +135,20 @@ namespace LiveSplit.UI.Components.OutputToFile {
 		// Names_Indent_{depth}.txt, with {1} left in for MakeFile
 		static string IndentFile(int depth) => string.Format(FILE_LIST_WHITESPACE, "", "{1}", depth);
 
+		// Numbers_{level}.txt, with {1} left in for MakeFile
+		static string NumbersFile(string levelTag) => string.Format(FILE_LIST_NUMBERS_IN_LEVEL, "", "{1}", levelTag);
+
 		void AppendNames(ListLines lines, int lvl, int spl) {
 			int allSplitsIndex = Levels[lvl].Indices[spl];
 			string name = Levels.Names[allSplitsIndex][lvl];
 			lines.NamesRaw.Append(State.Run[allSplitsIndex].Name);
 			lines.Names.Append(name);
+			// The member's number in its level, as in CurrentSplit\Number.txt
+			lines.Numbers.Append(spl + 1);
+			// And in each finer level, which has every member of this one: a section's number there is that of the split ending it
+			for (int i = 0; i < lines.FinerNumbers.Length; i++) {
+				lines.FinerNumbers[i].Append(MemberAtOrAfter(lvl + 1 + i, allSplitsIndex) + 1);
+			}
 			// Write different levels of subsplits to different files, allowing the user to indent them in their OBS etc.
 			lines.Indents[Levels.Depths[allSplitsIndex]].Append(name);
 		}
@@ -183,22 +195,25 @@ namespace LiveSplit.UI.Components.OutputToFile {
 		/// </summary>
 		class ListLines {
 
-			public readonly StringBuilder Names, NamesRaw;
+			public readonly StringBuilder Names, NamesRaw, Numbers;
 			public readonly StringBuilder RunTimeCurrent, GoldDelta, GoldHighlight;
 			// Only for the current split and those after it, which CompletedSplits never has, and for scrolling, which only
 			// moves SplitList. Null there.
 			public readonly StringBuilder GoldTimeUpcoming, CurrentSplitHighlight, ScrolledToSplitHighlight;
 			// Names_Indent_{depth}, one per depth up to the level's
 			public readonly StringBuilder[] Indents;
+			// Numbers_{level}, one per level finer than the list's, in order
+			public readonly StringBuilder[] FinerNumbers;
 			// The files of each comparison, in the order of SplitLevels.Comparisons
 			public readonly ComparisonLines[] Comparisons;
 
 			// Every file above with its FILE_LIST_* template, and the comparison's folder for a comparison's file
 			readonly List<(string Template, string ComparisonFolder, StringBuilder Lines)> _files = new List<(string, string, StringBuilder)>();
 
-			public ListLines(List<(string Name, string Folder)> comparisons, bool upcoming, int depths) {
+			public ListLines(List<(string Name, string Folder)> comparisons, bool upcoming, int depths, string[] finerLevels) {
 				Names = Add(FILE_LIST_NAMES);
 				NamesRaw = Add(FILE_LIST_NAMES_RAW);
+				Numbers = Add(FILE_LIST_NUMBERS);
 				RunTimeCurrent = Add(FILE_LIST_FINISH_TIME_LIVE);
 				GoldDelta = Add(FILE_LIST_GOLD_DELTA);
 				GoldHighlight = Add(FILE_LIST_GOLD_HIGHLIGHT);
@@ -211,6 +226,7 @@ namespace LiveSplit.UI.Components.OutputToFile {
 				for (int depth = 0; depth < depths; depth++) {
 					Indents[depth] = Add(IndentFile(depth));
 				}
+				FinerNumbers = finerLevels.Select(level => Add(NumbersFile(level))).ToArray();
 				Comparisons = comparisons.Select(c => new ComparisonLines(c.Name, upcoming, template => Add(template, c.Folder))).ToArray();
 			}
 

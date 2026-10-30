@@ -78,11 +78,15 @@ namespace LiveSplit.UI.Components.OutputToFile {
 		/// </summary>
 		void GenerateLevels(IRun run, int numberOfLevels) {
 			var splitLevelIndices = new List<List<int>>();
+			var membersAtOrAfter = new List<int[]>();
 
 			// Mark which splits belong to which level. Level 0 contains only top level splits, and then working down
 			for (int lvl = 0; lvl < numberOfLevels; lvl++) {
 				splitLevelIndices.Add(new List<int>());
+				membersAtOrAfter.Add(new int[run.Count]);
 				for (int splitIndex = 0; splitIndex < run.Count; splitIndex++) {
+					// The members before this split: a member's own local index, and otherwise the next member's
+					membersAtOrAfter[lvl][splitIndex] = splitLevelIndices[lvl].Count;
 					if (Depths[splitIndex] <= lvl) {
 						splitLevelIndices[lvl].Add(splitIndex);
 					}
@@ -92,7 +96,7 @@ namespace LiveSplit.UI.Components.OutputToFile {
 			// Make a list of times and deltae for each level
 			_levels = new SplitLevel[numberOfLevels];
 			for (int i = 0; i < numberOfLevels; i++) {
-				_levels[i] = new SplitLevel(splitLevelIndices[i]);
+				_levels[i] = new SplitLevel(splitLevelIndices[i], membersAtOrAfter[i]);
 			}
 		}
 
@@ -294,14 +298,17 @@ namespace LiveSplit.UI.Components.OutputToFile {
 
 		// Local index → global index into the run
 		public List<int> Indices;
+		// Global index → local index of the member at or after that split, the member that holds it: for a member, itself
+		public int[] MembersAtOrAfter;
 
 		// By comparison name, for SplitLevels.Comparisons, from SplitLevels.CalculateComparisonSegments
 		public Dictionary<string, Dictionary<TimingMethod, TimeSpan?[]>> ComparisonSegmentTimes = new Dictionary<string, Dictionary<TimingMethod, TimeSpan?[]>>();
 		// The fastest each member was done within one attempt, from SplitLevels.CalculateBestSegments
 		public Dictionary<TimingMethod, TimeSpan?[]> BestSegmentTimes;
 
-		public SplitLevel(List<int> indices) {
+		public SplitLevel(List<int> indices, int[] membersAtOrAfter) {
 			Indices = indices;
+			MembersAtOrAfter = membersAtOrAfter;
 			int count = indices.Count;
 			BestSegmentTimes = new Dictionary<TimingMethod, TimeSpan?[]>() { { TimingMethod.RealTime, new TimeSpan?[count] }, { TimingMethod.GameTime, new TimeSpan?[count] } };
 		}

@@ -41,6 +41,8 @@ CompletedSplits\AllSplits\Names_Indent_1.txt
   |(empty)
 CompletedSplits\AllSplits\Names_Raw.txt
   |(empty)
+CompletedSplits\AllSplits\Numbers.txt
+  |(empty)
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Run.txt
   |(empty)
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Segment.txt
@@ -106,6 +108,10 @@ CompletedSplits\SansSubsplits\Names.txt
 CompletedSplits\SansSubsplits\Names_Indent_0.txt
   |(empty)
 CompletedSplits\SansSubsplits\Names_Raw.txt
+  |(empty)
+CompletedSplits\SansSubsplits\Numbers.txt
+  |(empty)
+CompletedSplits\SansSubsplits\Numbers_AllSplits.txt
   |(empty)
 CompletedSplits\SansSubsplits\RealTime\CurrentComparison\Delta_Run.txt
   |(empty)
@@ -473,6 +479,13 @@ SplitList\AllSplits\Names_Raw.txt
   |-B1
   |{Area B}B2
   |
+SplitList\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
+  |4
+  |5
+  |
 SplitList\AllSplits\RealTime\CurrentComparison\Delta_Run.txt
   |(real time)
 SplitList\AllSplits\RealTime\CurrentComparison\Delta_Segment.txt
@@ -612,6 +625,14 @@ SplitList\SansSubsplits\Names_Indent_0.txt
 SplitList\SansSubsplits\Names_Raw.txt
   |{Area A}A3
   |{Area B}B2
+  |
+SplitList\SansSubsplits\Numbers.txt
+  |1
+  |2
+  |
+SplitList\SansSubsplits\Numbers_AllSplits.txt
+  |3
+  |5
   |
 SplitList\SansSubsplits\RealTime\CurrentComparison\Delta_Run.txt
   |(real time)
@@ -780,6 +801,9 @@ CompletedSplits\AllSplits\Names_Indent_1.txt
   |
 CompletedSplits\AllSplits\Names_Raw.txt
   |-A1
+  |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
   |
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Run.txt
   |(real time)
@@ -1030,6 +1054,10 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |-A1
   |-A2
   |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |
 CurrentSplit\AllSplits\After.txt
   |2
 CurrentSplit\AllSplits\Completed.txt
@@ -1268,6 +1296,11 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |-A2
   |{Area A}A3
   |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
+  |
 CompletedSplits\SansSubsplits\GameTime\CurrentComparison\Delta_Run.txt
   |−2.0
   |
@@ -1321,6 +1354,12 @@ CompletedSplits\SansSubsplits\Names_Indent_0.txt
   |
 CompletedSplits\SansSubsplits\Names_Raw.txt
   |{Area A}A3
+  |
+CompletedSplits\SansSubsplits\Numbers.txt
+  |1
+  |
+CompletedSplits\SansSubsplits\Numbers_AllSplits.txt
+  |3
   |
 CompletedSplits\SansSubsplits\RealTime\CurrentComparison\Delta_Run.txt
   |(real time)
@@ -1799,6 +1838,12 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |{Area A}A3
   |-B1
   |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
+  |4
+  |
 CurrentSplit\AllSplits\After.txt
   |0
 CurrentSplit\AllSplits\Completed.txt
@@ -2077,6 +2122,13 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |-B1
   |{Area B}B2
   |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
+  |4
+  |5
+  |
 CompletedSplits\SansSubsplits\GameTime\CurrentComparison\Delta_Run.txt
   |−1.0
   |−1.0
@@ -2148,6 +2200,14 @@ CompletedSplits\SansSubsplits\Names_Indent_0.txt
 CompletedSplits\SansSubsplits\Names_Raw.txt
   |{Area A}A3
   |{Area B}B2
+  |
+CompletedSplits\SansSubsplits\Numbers.txt
+  |1
+  |2
+  |
+CompletedSplits\SansSubsplits\Numbers_AllSplits.txt
+  |3
+  |5
   |
 CurrentSplit\AllSplits\After.txt
   |-
@@ -2430,6 +2490,8 @@ CompletedSplits\AllSplits\Names_Indent_1.txt
   |(empty)
 CompletedSplits\AllSplits\Names_Raw.txt
   |(empty)
+CompletedSplits\AllSplits\Numbers.txt
+  |(empty)
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Run.txt
   |(empty)
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Segment.txt
@@ -2495,6 +2557,10 @@ CompletedSplits\SansSubsplits\Names.txt
 CompletedSplits\SansSubsplits\Names_Indent_0.txt
   |(empty)
 CompletedSplits\SansSubsplits\Names_Raw.txt
+  |(empty)
+CompletedSplits\SansSubsplits\Numbers.txt
+  |(empty)
+CompletedSplits\SansSubsplits\Numbers_AllSplits.txt
   |(empty)
 CompletedSplits\SansSubsplits\RealTime\CurrentComparison\Delta_Run.txt
   |(empty)

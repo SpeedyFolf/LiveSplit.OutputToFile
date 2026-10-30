@@ -27,6 +27,8 @@ CompletedSplits\AllSplits\Names_Indent_0.txt
   |(empty)
 CompletedSplits\AllSplits\Names_Raw.txt
   |(empty)
+CompletedSplits\AllSplits\Numbers.txt
+  |(empty)
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Run.txt
   |(empty)
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Segment.txt
@@ -226,6 +228,13 @@ SplitList\AllSplits\Names_Raw.txt
   |-B1
   |{Area B}B2
   |
+SplitList\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
+  |4
+  |5
+  |
 SplitList\AllSplits\RealTime\CurrentComparison\Delta_Run.txt
   |(real time)
 SplitList\AllSplits\RealTime\CurrentComparison\Delta_Segment.txt
@@ -329,6 +338,9 @@ CompletedSplits\AllSplits\Names_Indent_0.txt
   |
 CompletedSplits\AllSplits\Names_Raw.txt
   |-A1
+  |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
   |
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Run.txt
   |(real time)
@@ -494,6 +506,10 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |-A1
   |-A2
   |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |
 CurrentSplit\AllSplits\After.txt
   |2
 CurrentSplit\AllSplits\Completed.txt
@@ -649,6 +665,11 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |-A1
   |-A2
   |{Area A}A3
+  |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
   |
 CurrentSplit\AllSplits\After.txt
   |1
@@ -823,6 +844,12 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |{Area A}A3
   |-B1
   |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
+  |4
+  |
 CurrentSplit\AllSplits\After.txt
   |0
 CurrentSplit\AllSplits\Completed.txt
@@ -971,6 +998,11 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |-A1
   |-A2
   |{Area A}A3
+  |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
   |
 CurrentSplit\AllSplits\After.txt
   |1
@@ -1132,6 +1164,12 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |-A2
   |{Area A}A3
   |-B1
+  |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
+  |4
   |
 CurrentSplit\AllSplits\After.txt
   |0
@@ -1321,6 +1359,13 @@ CompletedSplits\AllSplits\Names_Raw.txt
   |-B1
   |{Area B}B2
   |
+CompletedSplits\AllSplits\Numbers.txt
+  |1
+  |2
+  |3
+  |4
+  |5
+  |
 CurrentSplit\AllSplits\After.txt
   |-
 CurrentSplit\AllSplits\Completed.txt
@@ -1448,6 +1493,8 @@ CompletedSplits\AllSplits\Names.txt
 CompletedSplits\AllSplits\Names_Indent_0.txt
   |(empty)
 CompletedSplits\AllSplits\Names_Raw.txt
+  |(empty)
+CompletedSplits\AllSplits\Numbers.txt
   |(empty)
 CompletedSplits\AllSplits\RealTime\CurrentComparison\Delta_Run.txt
   |(empty)

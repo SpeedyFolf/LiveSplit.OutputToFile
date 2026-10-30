@@ -4,6 +4,10 @@ What changed in Output to File between releases: the files it writes, what they 
 
 ## Unreleased
 
+### Added
+
+- **`SplitList` and `CompletedSplits` now number their splits.** The new `Numbers.txt` has each split's number, counting from 1, on the same line as its name. In `SansSubsplits` the sections are numbered 1, 2, 3, as in `CurrentSplit`'s `Number.txt`. Every folder but `AllSplits` also gives each line's number in the folders with more splits, such as `Numbers_AllSplits.txt`, where a section has the number of its last split.
+
 ## 9 (2026-10-27)
 
 ### Added

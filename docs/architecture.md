@@ -178,7 +178,7 @@ With depths 0/1/2 (splits `A`, `-B`, `--C`, `D`) there are three levels: `SansSu
 
 ## Per-level data: `SplitLevel`
 
-Each `SplitLevel` holds its members, `Indices` (local index → global index), and arrays by timing method (`Dictionary<TimingMethod, TimeSpan?[]>`), indexed by **local** index:
+Each `SplitLevel` holds its members, `Indices` (local index → global index), and the way back, `MembersAtOrAfter`. That gives, for every split of the run, the local index of the member at or after it, the member that holds it, or for a member itself. `GenerateLevels` fills both in one pass, and `OutputWriter.MemberAtOrAfter` reads it. Then come arrays by timing method (`Dictionary<TimingMethod, TimeSpan?[]>`), indexed by **local** index:
 
 - `ComparisonSegmentTimes`, by comparison name, then by timing method: the comparison's split time at this member minus its split time at the previous member. The first member gets its split time. An entry is null if either value is missing. `CalculateComparisonSegments` fills it for each name in `SplitLevels.Comparisons` (see [Comparisons](#comparisons)).
 - `BestSegmentTimes`: the member's best segment, which golds are measured against. `CalculateBestSegments` fills it (below).
@@ -293,8 +293,8 @@ Most write functions start from these two helpers, which return a **local** inde
 
 - Every path is a `const string FILE_*` template, declared in the writer for its folder, with these placeholders:
   - `{0}` the timing method (`RealTime` / `GameTime`);
-  - `{1}` the level tag;
-  - `{2}` the indent index, `Names_Indent_*` only. Those files are pre-formatted with `{2}` filled in and `{1}` re-inserted as a literal (`IndentFile` in `SplitListFiles`);
+  - `{1}` the level tag (`OutputWriter.LevelTag`);
+  - `{2}` the indent index of `Names_Indent_*`, or the finer level's tag of `Numbers_*`. Those files are pre-formatted with `{2}` filled in and `{1}` re-inserted as a literal (`IndentFile` and `NumbersFile` in `SplitListFiles`);
   - `{3}` the comparison's folder, for the files written once per comparison (see [Comparisons](#comparisons)). It always comes right after the method folder.
 - The split list templates (`FILE_LIST_*`) are relative to the list folder. `WriteSplitListLevel` prefixes them with `FOLDER_SPLITLIST` (`SplitList\`) or `FOLDER_COMPLETEDSPLITS` (`CompletedSplits\`), so both lists write the same files, except the files only current and upcoming lines fill, which `CompletedSplits\` has none of.
 - `WriteSplitListLevel` builds a list in a new `ListLines`: one `StringBuilder` field per file, which the helpers append to directly, and a list of each field with its template and comparison folder, for ending lines and writing.

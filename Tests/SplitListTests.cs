@@ -80,6 +80,25 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 			}
 		}
 
+		[Fact]
+		public void ListsNumberTheirLines() {
+			using (var run = TestRun.Base(r => {
+				r.Settings.SplitsBefore = 1;
+				r.Settings.SplitsAfter = 1;
+			})) {
+				run.Start();
+				run.Split(9.5);
+				run.Split(21);
+				run.Split(28);
+				// On B1: the window has moved to A3, B1, B2
+				Assert.Equal(new[] { "3", "4", "5" }, run.Lines(@"SplitList\AllSplits\Numbers.txt"));
+				Assert.Equal(new[] { "1", "2", "3" }, run.Lines(@"CompletedSplits\AllSplits\Numbers.txt"));
+				// Area A and Area B, numbered within the level, not as the splits that end them
+				Assert.Equal(new[] { "1", "2" }, run.Lines(@"SplitList\SansSubsplits\Numbers.txt"));
+				Assert.Equal(new[] { "1" }, run.Lines(@"CompletedSplits\SansSubsplits\Numbers.txt"));
+			}
+		}
+
 		const string ALL_NAMES = @"SplitList\AllSplits\Names.txt";
 
 		// Shaped like a user's splits: subsplits two deep in the section that 0009 ends, then top-level splits up to 0020.
@@ -96,6 +115,25 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 		}
 
 		static string[] Names(params int[] splits) => splits.Select(s => s.ToString("0000")).ToArray();
+
+		static string[] Numbers(params int[] numbers) => numbers.Select(n => n.ToString()).ToArray();
+
+		[Fact]
+		public void NumbersInFinerLevels() {
+			using (var run = NestedRun()) {
+				// SansSubsplits' window is 0001 and 0009 to 0012
+				Assert.Equal(Numbers(1, 6, 7, 8, 9), run.Lines(@"SplitList\SansSubsplits\Numbers_SansSubsplits_Level2.txt"));
+				Assert.Equal(Numbers(1, 9, 10, 11, 12), run.Lines(@"SplitList\SansSubsplits\Numbers_AllSplits.txt"));
+				Assert.Equal(Numbers(1, 2, 5, 6, 8), run.Lines(@"SplitList\SansSubsplits_Level2\Numbers_AllSplits.txt"));
+				// None for coarser levels
+				Assert.False(run.Exists(@"SplitList\SansSubsplits_Level2\Numbers_SansSubsplits.txt"));
+				Assert.False(run.Exists(@"SplitList\AllSplits\Numbers_SansSubsplits_Level2.txt"));
+				run.Start();
+				for (int i = 1; i <= 10; i++) run.Split(10 * i);
+				Assert.Equal(Numbers(1, 9, 10), run.Lines(@"CompletedSplits\SansSubsplits\Numbers_AllSplits.txt"));
+				Assert.Equal(Numbers(1, 6, 7), run.Lines(@"CompletedSplits\SansSubsplits\Numbers_SansSubsplits_Level2.txt"));
+			}
+		}
 
 		const string SCROLLED_TO = @"Highlight_ScrolledToSplit.txt";
 

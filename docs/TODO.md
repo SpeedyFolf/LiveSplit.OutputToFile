@@ -23,6 +23,8 @@ When an item is finished, delete its row here and its section in the detail doc,
 
 | Code | Area | Summary | Severity |
 |---|---|---|---|
+| [RMN](Features.md#rmn--no-list-of-the-remaining-splits) | Split list | Add `RemainingSplits\`, the counterpart of `CompletedSplits\`: every member not yet completed, the current one included (all before the start, none after the finish), without the completed lines' files, with a setting, off by default | Medium |
+| [ALL](Features.md#all--no-list-of-every-split) | Split list | Add a list of every member of each level in every phase, with all of `SplitList\`'s files, with a setting, off by default. Name its folder first: `AllSplits` clashes with the level tag | Medium |
 
 ## Project and README — [Project.md](Project.md)
 

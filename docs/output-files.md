@@ -1,6 +1,6 @@
 # Output files
 
-Every file the component writes, what it contains, and when. This reference comes from the `FILE_*` templates in the writer classes (`RunInfoFiles`, `TimerFiles`, `SplitFiles`, `SplitListFiles`, `CustomVariableFiles`) and was checked against the base run in [testing.md](testing.md#the-base-run), which produces 171 files with every output on and no comparison ticked. The README describes the same files for users, in less detail.
+Every file the component writes, what it contains, and when. This reference comes from the `FILE_*` templates in the writer classes (`RunInfoFiles`, `TimerFiles`, `SplitFiles`, `SplitListFiles`, `CustomVariableFiles`) and was checked against the base run in [testing.md](testing.md#the-base-run), which produces 177 files with every output on and no comparison ticked. The README describes the same files for users, in less detail.
 
 How to read the paths:
 
@@ -127,6 +127,8 @@ Every file has the same number of lines, so separate text sources line up. "Comp
 |---|---|
 | `Names.txt` | Display name |
 | `Names_Raw.txt` | Raw name |
+| `Numbers.txt` | The member's number in the level, counting from 1, as in `CurrentSplit\Number.txt`. In `SansSubsplits` the sections are numbered 1, 2, 3, … |
+| `Numbers_{finer level}.txt` | The member's number in that finer level, which has every member of this one. A section's number there is that of the split ending it: in the base run, `SansSubsplits\Numbers_AllSplits.txt` holds `3` and `5`. One file per level finer than this one, so `AllSplits` has none. |
 | `Names_Indent_{n}.txt` (n = 0 … level) | Display name only on lines whose split depth is `n`. One file per indent level. |
 | `Highlight_CurrentSplit.txt` | Fill on the current member's line |
 | `Highlight_ScrolledToSplit.txt` | Fill on the line of the member holding the scrolled-to split, only while scrolled |
@@ -153,7 +155,7 @@ The same files as `SplitList`, but the lines cover every completed member: none 
 
 Turning off the Timer, Split list, Completed splits or Custom variables setting empties that output's files straight away. The same happens to:
 - the files of a level that is gone, because Subsplits was turned off or the splits no longer have that many dashes;
-- `Names_Indent_{n}.txt` for a depth no longer present;
+- `Names_Indent_{n}.txt` for a depth no longer present, and `Numbers_{level}.txt` for a level no longer present;
 - the files in a comparison's folder, when it's unticked, or when the open splits don't have that comparison;
 - the file of a variable, or a custom variable, the splits no longer have.
 
