@@ -63,7 +63,7 @@ The code is in `UI/Components/`:
 | `RunInfoFiles.cs` | Writes the root files (`GameName.txt`, `TotalSplits_*.txt`, …), and `Variables\`, a file per variable of the run |
 | `TimerFiles.cs` | Writes `Timers\` |
 | `SplitFiles.cs` | Writes `CurrentSplit\` and `PreviousSplit\`, including `Sign.txt` |
-| `SplitListFiles.cs` | Writes `SplitList\` and `CompletedSplits\` |
+| `SplitListFiles.cs` | Writes `SplitList\`, `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` |
 | `CustomVariableFiles.cs` | Writes `CustomVariables\`, LiveSplit's custom variables, which change with no event: compared every frame, and read safely while the server's thread adds to them |
 | `Signs.cs` | The `Sign.txt` values |
 | `TimeFormatter.cs` | Time and delta strings, from LiveSplit's formatters, and the `FormatAccuracy` choices. Writers call `OutputWriter.DurationString` and `DeltaString`, which pass the Time Format settings. |
@@ -91,14 +91,19 @@ The code is in `UI/Components/`:
   - `MakeFile` only queues: `FileQueue` writes on a thread-pool thread, keeping the latest contents per file and skipping contents already on disk. A reset clears that record, in the next `Update()`. Anything that reads the files must call `WaitForFileWrites()` first; the tests' `TestRun.Tick()` does.
   - A full rewrite in `Update()` must queue every file the settings and levels call for, whatever the phase. `FileQueue.EndSweep` empties any file in the component's folders (`OUTPUT_FOLDERS`, plus root files matching `OUTPUT_ROOT_FILES`) that wasn't queued, so a file written in only some phases would be emptied in the others.
   - The drain catches every exception per file, and `Update()` shows the latest in the settings panel (`ShowWriteError`). Only touch the settings control from the UI thread. Don't add file access that bypasses `FileQueue`: an exception would escape into LiveSplit's `Update()`.
-- **One list writer.** `SplitList\` and `CompletedSplits\` are both written by `WriteSplitListLevel` in `SplitListFiles`. They differ in the range of splits that `WriteSplitLists` passes in, and in `upcoming`: `CompletedSplits\` has no current or upcoming lines, so it leaves out the files only those fill. It doesn't scroll either, so it leaves out `Highlight_ScrolledToSplit.txt` too. Their `FILE_LIST_*` templates are relative to the list folder, so prefix `FOLDER_SPLITLIST` or `FOLDER_COMPLETEDSPLITS`. A `ListLines` builds every file of one list a line at a time, so each file gets one line per split, blank where it has nothing.
+- **One list writer.** `SplitList\`, `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` are all built by `BuildList` in `SplitListFiles`, and written by `WriteList`.
+  - `CompletedSplits\` and `RemainingSplits\` are the two halves of a level, built once. `FullSplitList\` has no range of its own: `WriteJoinedList` writes the two halves joined.
+  - They differ in the range of splits that `WriteSplitLists` passes in, and in three flags for what the list has: `completed`, `upcoming` and `scrolls`. A list leaves out the files that only what it doesn't have would fill.
+  - `CompletedSplits\` has no current or upcoming lines, and `RemainingSplits\` has no completed ones. Only `SplitList\` scrolls, so only it has `Highlight_ScrolledToSplit.txt`.
+  - Their `FILE_LIST_*` templates are relative to the list folder, so prefix the list's `FOLDER_*` constant.
+  - A `ListLines` builds every file of one list a line at a time, so each file gets one line per split, blank where it has nothing.
 
 ## Making changes
 
 **Adding an output file:**
 1. Add a `FILE_*` template to the writer for its folder (see the file table above). Root files go in `RunInfoFiles`; a root file that isn't always written must also match `OUTPUT_ROOT_FILES` in the component, or it won't be emptied when it's no longer written.
 2. Write it from that writer's `Write*` function, in every phase branch. If its contents depend on the comparison, put `{3}` right after `{0}` in its template, and write it inside the loop over `Levels.Comparisons` (see "Comparisons" above).
-3. If it's a list column, make it a `FILE_LIST_*` template and give it a `StringBuilder` field: in `ListLines`, created with `Add` in its constructor, or in `ComparisonLines` with `add` if it depends on the comparison. Append its line in `AppendNames`, `AppendCompletedLine` or `AppendUpcomingLine`. Both lists then get it, except a file that only `AppendUpcomingLine` fills: `Add` that one inside `if (upcoming)`, so only `SplitList\` gets it.
+3. If it's a list column, make it a `FILE_LIST_*` template and give it a `StringBuilder` field: in `ListLines`, created with `Add` in its constructor, or in `ComparisonLines` with `add` if it depends on the comparison. Append its line in `AppendNames`, `AppendCompletedLine` or `AppendUpcomingLine`. A file that `AppendNames` fills goes in every list. One that only `AppendCompletedLine` fills is added inside `if (completed)`, and one that only `AppendUpcomingLine` fills inside `if (upcoming)`, so the lists that never have such lines leave it out.
 4. Write it once per timing method only if its path contains `{0}`.
 5. Document it in `docs/output-files.md`, `README.md` and `CHANGELOG.md`.
 6. Update the test snapshots (docs/testing.md), and check in their diff that the file shows up with the contents you expect.

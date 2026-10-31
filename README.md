@@ -29,6 +29,8 @@ The settings are in LiveSplit's Layout Settings, on the **Output to File** tab.
   - **Completed splits**: `CompletedSplits`, a list of every split done so far. Off at first.
   - **Split List**: `SplitList`, a list of the splits around the current one. On at first.
   - **Custom variables**: `CustomVariables`, the variables your auto splitter or other tools set (see below). Off at first.
+  - **Remaining splits**: `RemainingSplits`, a list of every split not done yet, the current one included. Off at first.
+  - **Full split list**: `FullSplitList`, a list of every split, done or not. Off at first.
 - **Split List Writing**: how many splits `SplitList` shows before and after the current one, 10 each at first. Near the start and the end of the run, the list shows the first or the last splits instead, so its length stays the same. Scrolling with the mouse wheel over LiveSplit moves `SplitList` too: each notch moves on a split, and the list shows the splits around that split, the same way it shows those around the current one. The next split, start, skip, undo or reset brings it back to the current split.
 - **Comparisons**: which comparisons get a folder of their own (see [Comparisons](#comparisons)).
 - **Time Format**: the decimals of times and of differences (see below).
@@ -44,7 +46,7 @@ The [tree](#output-directory-tree) at the end of this page lists every file.
 - The main folder holds the run's details: `GameName.txt`, `CategoryName.txt`, `PlatformName.txt` (the platform set in Edit Splits), `RegionName.txt` (the region), `UsesEmulator.txt` (`Emulator` when Uses Emulator is ticked, otherwise empty), `Variables.txt` (see below), `AttemptCount.txt`, `FinishedRunsCount.txt`, the number of splits, and `CurrentComparison.txt` (see [Comparisons](#comparisons)).
 - `Variables` has a file for each variable set in Edit Splits, with its value: `Variables\Variant.txt` holds `Unrestricted`. A file is named after its variable, without the `?` that Yes/No variables end with, and with `_` for any character a file name can't have. `Variables.txt` has them all on one line, as LiveSplit adds them to the category in its title: `Unrestricted, No Glitches`.
 - `CurrentSplit` is about the split you're on, and `PreviousSplit` about the one you just did.
-- `SplitList` is a list of the splits around the current one, and `CompletedSplits` a list of every split done so far.
+- `SplitList` is a list of the splits around the current one. `CompletedSplits` lists every split done so far, `RemainingSplits` every split not done yet, and `FullSplitList` every split.
 - `Timers` holds the run's timer, `RunTimer.txt`, and the time since the last split, `SegmentTimer_….txt`.
 - `CustomVariables` has a file for each custom variable, with its value: LiveSplit's own variables, which auto splitters and other tools can set, such as a death count in `CustomVariables\Deaths.txt`. Each file changes as soon as its value does. A variable that LiveSplit knows of but that has no value yet shows `-`. Files are named as in `Variables`.
 
@@ -64,11 +66,14 @@ After is the number of splits after the current one. It's `-` before the timer s
 
 Every file in a list has one line per split, so text sources placed side by side line up. A line with nothing to show is blank. `Names_Indent_0.txt`, `Names_Indent_1.txt`, … have a split's name only on the lines of splits with that many dashes, so each depth can be its own text source, indented differently. `Numbers.txt` has each split's number, counting from 1, as `Number.txt` does: in `SansSubsplits` the sections are numbered 1, 2, 3, …. The other folders than `AllSplits` also give each line's number in the folders with more splits: `Numbers_AllSplits.txt`, `Numbers_SansSubsplits_Level2.txt`, and so on. A section's number there is that of its last split, so in `SansSubsplits`, `Numbers_AllSplits.txt` might read 3, 5, 9.
 
-`CompletedSplits` has the same files as `SplitList`, except `Highlight_CurrentSplit.txt` and the `Time_…_Upcoming.txt` files, since none of its splits are current or upcoming, and `Highlight_ScrolledToSplit.txt`, since it doesn't scroll.
+The other lists have the same files as `SplitList`, except `Highlight_ScrolledToSplit.txt`, since they don't scroll. Some leave out more:
+- `CompletedSplits` also leaves out `Highlight_CurrentSplit.txt` and the `Time_…_Upcoming.txt` files, since none of its splits are current or upcoming.
+- `RemainingSplits` leaves out the files about splits already done: `Time_Run_Current.txt`, the `Delta_…` files, and every highlight but `Highlight_CurrentSplit.txt`. It starts at the current split, and is empty once the run is finished.
+- `FullSplitList` has every split, from before the start to after the finish. During the run, it has the lines of `CompletedSplits` followed by those of `RemainingSplits`.
 
 Highlights are a shaded bar to layer behind splits. `Highlight_ScrolledToSplit.txt` marks the split you've scrolled to with the mouse wheel (see Split List Writing under [Settings](#settings)), or in `SansSubsplits` the section it's in. It's empty while you haven't scrolled.
 
-The files of an output you turn off in the settings, of a comparison you untick, or of a subsplit level your splits no longer have, are emptied rather than deleted, so text sources that use them show nothing. The component treats everything in its folders (`CurrentSplit`, `PreviousSplit`, `SplitList`, `CompletedSplits`, `Timers`, `Variables` and `CustomVariables`) as its own, so don't keep other files there.
+The files of an output you turn off in the settings, of a comparison you untick, or of a subsplit level your splits no longer have, are emptied rather than deleted, so text sources that use them show nothing. The component treats everything in its folders (`CurrentSplit`, `PreviousSplit`, `SplitList`, `CompletedSplits`, `RemainingSplits`, `FullSplitList`, `Timers`, `Variables` and `CustomVariables`) as its own, so don't keep other files there.
 
 When you close LiveSplit, it resets the timer, so the files show what they show after a reset. **Close Splits** does the same, and the files then show its empty splits. Opening another layout, or removing the component from the layout, leaves the files as they are.
 
@@ -262,6 +267,71 @@ This is the tree for splits with three levels of subsplits, one variable, Varian
 +---CustomVariables
 |       Deaths.txt
 |       
++---FullSplitList
+|   +---AllSplits
+|   |   |   Highlight_CurrentSplit.txt
+|   |   |   Names.txt
+|   |   |   Names_Indent_0.txt
+|   |   |   Names_Indent_1.txt
+|   |   |   Names_Indent_2.txt
+|   |   |   Names_Indent_3.txt
+|   |   |   Names_Raw.txt
+|   |   |   Numbers.txt
+|   |   |   
+|   |   +---GameTime
+|   |   |   |   Delta_Gold.txt
+|   |   |   |   Highlight_Gold.txt
+|   |   |   |   Time_Gold_Upcoming.txt
+|   |   |   |   Time_Run_Current.txt
+|   |   |   |   
+|   |   |   +---CurrentComparison
+|   |   |   |       Delta_Run.txt
+|   |   |   |       Delta_Segment.txt
+|   |   |   |       Highlight_AheadGained.txt
+|   |   |   |       Highlight_AheadLost.txt
+|   |   |   |       Highlight_BehindGained.txt
+|   |   |   |       Highlight_BehindLost.txt
+|   |   |   |       Time_Run_Upcoming.txt
+|   |   |   |       Time_Segment_Upcoming.txt
+|   |   |   |       
+|   |   |   \---PersonalBest
+|   |   |           Delta_Run.txt
+|   |   |           Delta_Segment.txt
+|   |   |           Highlight_AheadGained.txt
+|   |   |           Highlight_AheadLost.txt
+|   |   |           Highlight_BehindGained.txt
+|   |   |           Highlight_BehindLost.txt
+|   |   |           Time_Run_Upcoming.txt
+|   |   |           Time_Segment_Upcoming.txt
+|   |   |           
+|   |   \---RealTime
+|   |       |   Delta_Gold.txt
+|   |       |   Highlight_Gold.txt
+|   |       |   Time_Gold_Upcoming.txt
+|   |       |   Time_Run_Current.txt
+|   |       |   
+|   |       \---CurrentComparison
+|   |               Delta_Run.txt
+|   |               Delta_Segment.txt
+|   |               Highlight_AheadGained.txt
+|   |               Highlight_AheadLost.txt
+|   |               Highlight_BehindGained.txt
+|   |               Highlight_BehindLost.txt
+|   |               Time_Run_Upcoming.txt
+|   |               Time_Segment_Upcoming.txt
+|   |               
+|   +---SansSubsplits
+|   |   |   etc.
+|   |   …
+|   |               
+|   +---SansSubsplits_Level2
+|   |   |   etc.
+|   |   …
+|   |               
+|   \---SansSubsplits_Level3
+|       |   etc.
+|       …
+|               
 +---PreviousSplit
 |   +---AllSplits
 |   |   |   Name.txt
@@ -339,6 +409,47 @@ This is the tree for splits with three levels of subsplits, one variable, Varian
 |   |               RunDifference.txt
 |   |               SegmentDifference.txt
 |   |               Sign.txt
+|   |               
+|   \---SansSubsplits_Level3
+|       |   etc.
+|       …
+|               
++---RemainingSplits
+|   +---AllSplits
+|   |   |   Highlight_CurrentSplit.txt
+|   |   |   Names.txt
+|   |   |   Names_Indent_0.txt
+|   |   |   Names_Indent_1.txt
+|   |   |   Names_Indent_2.txt
+|   |   |   Names_Indent_3.txt
+|   |   |   Names_Raw.txt
+|   |   |   Numbers.txt
+|   |   |   
+|   |   +---GameTime
+|   |   |   |   Time_Gold_Upcoming.txt
+|   |   |   |   
+|   |   |   +---CurrentComparison
+|   |   |   |       Time_Run_Upcoming.txt
+|   |   |   |       Time_Segment_Upcoming.txt
+|   |   |   |       
+|   |   |   \---PersonalBest
+|   |   |           Time_Run_Upcoming.txt
+|   |   |           Time_Segment_Upcoming.txt
+|   |   |           
+|   |   \---RealTime
+|   |       |   Time_Gold_Upcoming.txt
+|   |       |   
+|   |       \---CurrentComparison
+|   |               Time_Run_Upcoming.txt
+|   |               Time_Segment_Upcoming.txt
+|   |               
+|   +---SansSubsplits
+|   |   |   etc.
+|   |   …
+|   |               
+|   +---SansSubsplits_Level2
+|   |   |   etc.
+|   |   …
 |   |               
 |   \---SansSubsplits_Level3
 |       |   etc.

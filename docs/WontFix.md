@@ -35,3 +35,38 @@ Problems that are known and measured, but were decided not to be worth fixing. E
 - Time `WaitForFileWrites()` per split before and after, since every file then costs a temp write and a rename.
 
 **Docs.** architecture.md, the `FileQueue` `Drain` bullet. CHANGELOG.md, under Fixed: an OBS text source on a timer file sometimes went blank for a second or two.
+
+## RLT — The long lists rebuild every line on every split
+
+`CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` rebuild every line they hold on every rewrite, for every level, timing method and comparison. Within an attempt, a split changes only two things: one line turns from upcoming to completed, and the current split's highlight moves. Every other line's text is the same as before.
+
+**Won't fix.** Decided 2026-10-31. Keeping the lines' text would mean storing state about the current attempt, which the design rules out (CLAUDE.md, "Nothing per attempt is stored"). A line depends on:
+- the split times, which an undo or a skip changes;
+- the comparisons' times and the best segments;
+- the selected and ticked comparisons;
+- the split names and their depths;
+- the accuracy settings and the Subsplits setting.
+
+Each of those would need to clear the stored text. If one were missed, the files would keep a wrong line until the next reset, and the tests only catch the cases someone thought of. The gain only shows on splits files with thousands of lines. Pick it up again if LiveSplit is seen stuttering on splits with a long splits file.
+
+**Evidence.**
+- Measured 2026-10-31, headless, on the 1,317-split, seven-level GTA SA file, mid-run. With `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` all on, a split's `Update()` takes 21 ms (Debug) or 17 ms (Release). With only `CompletedSplits\`, it takes 14 or 10 ms.
+- The lines cost about 2 µs each (Release), spread out:
+  - the names, about a quarter;
+  - the completed and upcoming values, about 40%;
+  - the line ends, about 10%;
+  - building and queueing the files, about 15%.
+- Formatting the times is about 17% of it, too little to be worth a faster formatter.
+- The figures are in architecture.md's "Cost of the long lists".
+
+**Plan, if it's ever needed.**
+- Keep each list's text per member between rewrites, in `SplitListFiles`.
+- On a rewrite whose only change is a split, skip, undo, pause or resume, rebuild only the lines of members whose state changed, plus the current highlight, and join the rest from the kept text.
+- On any other rewrite, throw the kept text away.
+
+**Verify.**
+- The snapshots are unchanged.
+- Add a test for each input above, changed mid-run, checking that every list follows it.
+- Time a split on the GTA SA file before and after.
+
+**Docs.** architecture.md (the cost figures, Writing files) and CLAUDE.md ("Nothing per attempt is stored").

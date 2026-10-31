@@ -17,6 +17,8 @@ namespace LiveSplit.UI.Components.OutputToFile
 		public bool OutputSplitList { get; set; }
 		public bool OutputSubsplits { get; set; }
 		public bool OutputCompletedSplits { get; set; }
+		public bool OutputRemainingSplits { get; set; }
+		public bool OutputFullSplitList { get; set; }
 		public bool OutputCustomVariables { get; set; }
 		// A folder for every custom comparison of the open splits, ticked or not
 		public bool AllCustomComparisons { get; set; }
@@ -48,6 +50,8 @@ namespace LiveSplit.UI.Components.OutputToFile
 			OutputSplitList = true;
 			OutputSubsplits = true;
 			OutputCompletedSplits = false;
+			OutputRemainingSplits = false;
+			OutputFullSplitList = false;
 			OutputCustomVariables = false;
 			AllCustomComparisons = false;
 			TimeAccuracy = FormatAccuracy.Seconds;
@@ -62,6 +66,8 @@ namespace LiveSplit.UI.Components.OutputToFile
 			this.checkBoxOutputSplitList.DataBindings.Add("Checked", this, "OutputSplitList", false, DataSourceUpdateMode.OnPropertyChanged);
 			this.checkBoxOutputSubsplits.DataBindings.Add("Checked", this, "OutputSubsplits", false, DataSourceUpdateMode.OnPropertyChanged);
 			this.checkBoxOutputCompletedSplits.DataBindings.Add("Checked", this, "OutputCompletedSplits", false, DataSourceUpdateMode.OnPropertyChanged);
+			this.checkBoxOutputRemainingSplits.DataBindings.Add("Checked", this, "OutputRemainingSplits", false, DataSourceUpdateMode.OnPropertyChanged);
+			this.checkBoxOutputFullSplitList.DataBindings.Add("Checked", this, "OutputFullSplitList", false, DataSourceUpdateMode.OnPropertyChanged);
 			this.checkBoxOutputCustomVariables.DataBindings.Add("Checked", this, "OutputCustomVariables", false, DataSourceUpdateMode.OnPropertyChanged);
 			this.checkBoxAllCustomComparisons.DataBindings.Add("Checked", this, "AllCustomComparisons", false, DataSourceUpdateMode.OnPropertyChanged);
 		}
@@ -75,6 +81,8 @@ namespace LiveSplit.UI.Components.OutputToFile
 				SettingsHelper.CreateSetting(document, parent, "OutputSplitList", OutputSplitList) ^
 				SettingsHelper.CreateSetting(document, parent, "OutputSubsplits", OutputSubsplits) ^
 				SettingsHelper.CreateSetting(document, parent, "OutputCompletedSplits", OutputCompletedSplits) ^
+				SettingsHelper.CreateSetting(document, parent, "OutputRemainingSplits", OutputRemainingSplits) ^
+				SettingsHelper.CreateSetting(document, parent, "OutputFullSplitList", OutputFullSplitList) ^
 				SettingsHelper.CreateSetting(document, parent, "OutputCustomVariables", OutputCustomVariables) ^
 				SettingsHelper.CreateSetting(document, parent, "AllCustomComparisons", AllCustomComparisons) ^
 				SettingsHelper.CreateSetting(document, parent, "TimeAccuracy", TimeAccuracy) ^
@@ -131,6 +139,8 @@ namespace LiveSplit.UI.Components.OutputToFile
 			OutputSplitList = SettingsHelper.ParseBool(element["OutputSplitList"], true);
 			OutputSubsplits = SettingsHelper.ParseBool(element["OutputSubsplits"], true);
 			OutputCompletedSplits = SettingsHelper.ParseBool(element["OutputCompletedSplits"], false);
+			OutputRemainingSplits = SettingsHelper.ParseBool(element["OutputRemainingSplits"], false);
+			OutputFullSplitList = SettingsHelper.ParseBool(element["OutputFullSplitList"], false);
 			OutputCustomVariables = SettingsHelper.ParseBool(element["OutputCustomVariables"], false);
 			AllCustomComparisons = SettingsHelper.ParseBool(element["AllCustomComparisons"], false);
 			TimeAccuracy = ParseAccuracy(element["TimeAccuracy"], FormatAccuracy.Seconds);

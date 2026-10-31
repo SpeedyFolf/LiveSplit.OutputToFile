@@ -21,6 +21,8 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 				OutputSplitList = false,
 				OutputSubsplits = false,
 				OutputCompletedSplits = true,
+				OutputRemainingSplits = true,
+				OutputFullSplitList = true,
 				OutputCustomVariables = true,
 				AllCustomComparisons = true,
 				TimeAccuracy = FormatAccuracy.Milliseconds,
@@ -38,6 +40,8 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 				Assert.False(loaded.OutputSplitList);
 				Assert.False(loaded.OutputSubsplits);
 				Assert.True(loaded.OutputCompletedSplits);
+				Assert.True(loaded.OutputRemainingSplits);
+				Assert.True(loaded.OutputFullSplitList);
 				Assert.True(loaded.OutputCustomVariables);
 				Assert.True(loaded.AllCustomComparisons);
 				Assert.Equal(FormatAccuracy.Milliseconds, loaded.TimeAccuracy);
@@ -52,6 +56,8 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 				FolderPath = @"C:\Stream",
 				SplitsBefore = 3,
 				OutputCompletedSplits = true,
+				OutputRemainingSplits = true,
+				OutputFullSplitList = true,
 				OutputCustomVariables = true,
 				TimeAccuracy = FormatAccuracy.Milliseconds,
 			}) {
@@ -65,6 +71,8 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 				Assert.True(settings.OutputSplitList);
 				Assert.True(settings.OutputSubsplits);
 				Assert.False(settings.OutputCompletedSplits);
+				Assert.False(settings.OutputRemainingSplits);
+				Assert.False(settings.OutputFullSplitList);
 				Assert.False(settings.OutputCustomVariables);
 				Assert.False(settings.AllCustomComparisons);
 				Assert.Equal(FormatAccuracy.Seconds, settings.TimeAccuracy);
@@ -113,6 +121,10 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 
 				Control<CheckBox>(settings, "checkBoxOutputCompletedSplits").Checked = true;
 				Assert.True(settings.OutputCompletedSplits);
+				Control<CheckBox>(settings, "checkBoxOutputRemainingSplits").Checked = true;
+				Assert.True(settings.OutputRemainingSplits);
+				Control<CheckBox>(settings, "checkBoxOutputFullSplitList").Checked = true;
+				Assert.True(settings.OutputFullSplitList);
 				Control<CheckBox>(settings, "checkBoxOutputCustomVariables").Checked = true;
 				Assert.True(settings.OutputCustomVariables);
 				Control<NumericUpDown>(settings, "numericUpDownSplitListBefore").Value = 3;

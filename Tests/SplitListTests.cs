@@ -4,7 +4,7 @@ using Xunit;
 
 namespace LiveSplit.UI.Components.OutputToFile.Tests {
 	/// <summary>
-	/// SplitList\ and CompletedSplits\
+	/// SplitList\, CompletedSplits\, RemainingSplits\ and FullSplitList\
 	/// </summary>
 	public class SplitListTests {
 
@@ -15,6 +15,24 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 			@"GameTime\CurrentComparison\Highlight_BehindGained.txt",
 			@"GameTime\CurrentComparison\Highlight_BehindLost.txt",
 		};
+
+		// The files only completed lines fill
+		static readonly string[] COMPLETED_FILES = HIGHLIGHTS.Concat(new[] {
+			@"GameTime\Time_Run_Current.txt",
+			@"GameTime\Delta_Gold.txt",
+			@"GameTime\CurrentComparison\Delta_Run.txt",
+			@"GameTime\CurrentComparison\Delta_Segment.txt",
+		}).ToArray();
+
+		// The files only the current and upcoming lines fill
+		static readonly string[] UPCOMING_FILES = {
+			@"Highlight_CurrentSplit.txt",
+			@"GameTime\Time_Gold_Upcoming.txt",
+			@"GameTime\CurrentComparison\Time_Run_Upcoming.txt",
+			@"GameTime\CurrentComparison\Time_Segment_Upcoming.txt",
+		};
+
+		static readonly string FILL = new string('█', 43);
 
 		[Fact]
 		public void PausingKeepsTheDifferences() {
@@ -35,7 +53,7 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 				run.Start();
 				run.Skip();
 				run.Split(21);
-				foreach (string list in new[] { "SplitList", "CompletedSplits" }) {
+				foreach (string list in new[] { "SplitList", "CompletedSplits", "FullSplitList" }) {
 					foreach (string highlight in HIGHLIGHTS) {
 						Assert.Equal("", run.Lines($@"{list}\AllSplits\{highlight}")[0]);
 					}
@@ -43,20 +61,122 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 			}
 		}
 
-		[Fact]
-		public void CompletedSplitsHasNoUpcomingFiles() {
+		// A list leaves out the files that only lines it never has would fill
+		[Theory]
+		[InlineData("SplitList", true, true, true)]
+		[InlineData("CompletedSplits", true, false, false)]
+		[InlineData("RemainingSplits", false, true, false)]
+		[InlineData("FullSplitList", true, true, false)]
+		public void EachListHasTheFilesOfItsLines(string list, bool completed, bool upcoming, bool scrolls) {
 			using (var run = TestRun.Base()) {
 				run.Start();
 				run.Split(9.5);
-				foreach (string file in new[] {
-					@"Highlight_CurrentSplit.txt",
-					@"GameTime\Time_Gold_Upcoming.txt",
-					@"GameTime\CurrentComparison\Time_Run_Upcoming.txt",
-					@"GameTime\CurrentComparison\Time_Segment_Upcoming.txt",
-				}) {
-					Assert.True(run.Exists(@"SplitList\AllSplits\" + file), file);
-					Assert.False(run.Exists(@"CompletedSplits\AllSplits\" + file), file);
+				Assert.True(run.Exists($@"{list}\AllSplits\Names.txt"));
+				foreach (string file in COMPLETED_FILES) {
+					Assert.True(run.Exists($@"{list}\AllSplits\{file}") == completed, file);
 				}
+				foreach (string file in UPCOMING_FILES) {
+					Assert.True(run.Exists($@"{list}\AllSplits\{file}") == upcoming, file);
+				}
+				Assert.True(run.Exists($@"{list}\AllSplits\{SCROLLED_TO}") == scrolls, SCROLLED_TO);
+			}
+		}
+
+		[Fact]
+		public void RemainingSplitsStartAtTheCurrentSplit() {
+			using (var run = TestRun.Base()) {
+				const string NAMES = @"RemainingSplits\AllSplits\Names.txt";
+				const string SECTIONS = @"RemainingSplits\SansSubsplits\Names.txt";
+				const string CURRENT = @"RemainingSplits\AllSplits\Highlight_CurrentSplit.txt";
+				// Every split, none of them current
+				Assert.Equal(new[] { "A1", "A2", "A3", "B1", "B2" }, run.Lines(NAMES));
+				Assert.Equal(new[] { "", "", "", "", "" }, run.Lines(CURRENT));
+				run.Start();
+				run.Split(9.5);
+				// On A2, a subsplit of Area A
+				Assert.Equal(new[] { "A2", "A3", "B1", "B2" }, run.Lines(NAMES));
+				Assert.Equal(new[] { FILL, "", "", "" }, run.Lines(CURRENT));
+				Assert.Equal(new[] { "0:20", "0:30", "0:40", "0:50" }, run.Lines(@"RemainingSplits\AllSplits\GameTime\CurrentComparison\Time_Run_Upcoming.txt"));
+				Assert.Equal(new[] { "Area A", "Area B" }, run.Lines(SECTIONS));
+				Assert.Equal(new[] { FILL, "" }, run.Lines(@"RemainingSplits\SansSubsplits\Highlight_CurrentSplit.txt"));
+				run.Split(21);
+				run.Split(28);
+				// On B1
+				Assert.Equal(new[] { "B1", "B2" }, run.Lines(NAMES));
+				Assert.Equal(new[] { "Area B" }, run.Lines(SECTIONS));
+				run.Split(39);
+				run.Split(48);
+				// None left after the finish
+				Assert.Equal("", run.Read(NAMES));
+				Assert.Equal("", run.Read(CURRENT));
+				Assert.Equal("", run.Read(SECTIONS));
+			}
+		}
+
+		[Fact]
+		public void FullSplitListHasEverySplit() {
+			using (var run = TestRun.Base()) {
+				const string NAMES = @"FullSplitList\AllSplits\Names.txt";
+				const string CURRENT = @"FullSplitList\AllSplits\Highlight_CurrentSplit.txt";
+				const string DELTAS = @"AllSplits\GameTime\CurrentComparison\Delta_Run.txt";
+				const string UPCOMING = @"FullSplitList\AllSplits\GameTime\CurrentComparison\Time_Run_Upcoming.txt";
+				string[] splits = { "A1", "A2", "A3", "B1", "B2" };
+				Assert.Equal(splits, run.Lines(NAMES));
+				Assert.Equal(new[] { "", "", "", "", "" }, run.Lines(CURRENT));
+				Assert.Equal(new[] { "0:10", "0:20", "0:30", "0:40", "0:50" }, run.Lines(UPCOMING));
+				run.Start();
+				run.Split(9.5);
+				run.Split(21);
+				// On A3: the completed splits' lines, then the remaining splits'
+				Assert.Equal(run.Lines(@"CompletedSplits\AllSplits\Names.txt").Concat(run.Lines(@"RemainingSplits\AllSplits\Names.txt")), run.Lines(NAMES));
+				Assert.Equal(new[] { "−0.5", "+1.0", "", "", "" }, run.Lines(@"FullSplitList\" + DELTAS));
+				Assert.Equal(new[] { "", "", "0:30", "0:40", "0:50" }, run.Lines(UPCOMING));
+				Assert.Equal(new[] { "", "", FILL, "", "" }, run.Lines(CURRENT));
+				Assert.Equal(new[] { "Area A", "Area B" }, run.Lines(@"FullSplitList\SansSubsplits\Names.txt"));
+				Assert.Equal(new[] { FILL, "" }, run.Lines(@"FullSplitList\SansSubsplits\Highlight_CurrentSplit.txt"));
+				run.Split(28);
+				run.Split(39);
+				run.Split(48);
+				// Every line completed after the finish
+				Assert.Equal(splits, run.Lines(NAMES));
+				Assert.Equal(run.Lines(@"CompletedSplits\" + DELTAS), run.Lines(@"FullSplitList\" + DELTAS));
+				Assert.Equal(new[] { "", "", "", "", "" }, run.Lines(UPCOMING));
+				Assert.Equal(new[] { "", "", "", "", "" }, run.Lines(CURRENT));
+			}
+		}
+
+		// FullSplitList\ is built from the lines of the other two, which must be built even when they aren't written
+		[Theory]
+		[InlineData("CompletedSplits")]
+		[InlineData("RemainingSplits")]
+		[InlineData("FullSplitList")]
+		public void EachListIsTheSameWithoutTheOthers(string list) {
+			using (var all = TestRun.Base())
+			using (var alone = TestRun.Base(r => {
+				r.Settings.OutputCompletedSplits = list == "CompletedSplits";
+				r.Settings.OutputRemainingSplits = list == "RemainingSplits";
+				r.Settings.OutputFullSplitList = list == "FullSplitList";
+			})) {
+				var runs = new[] { all, alone };
+				// Real time is the wall clock's, which differs between the two runs
+				IEnumerable<KeyValuePair<string, string>> Files(TestRun run) => run.AllFiles().Where(f => f.Key.StartsWith(list + @"\") && !f.Key.Contains("RealTime"));
+				void AssertSame() => Assert.Equal(Files(all), Files(alone));
+				AssertSame();
+				foreach (var run in runs) run.Start();
+				AssertSame();
+				foreach (var run in runs) run.Split(9.5);
+				AssertSame();
+				foreach (var run in runs) run.Skip();
+				AssertSame();
+				foreach (var run in runs) run.Undo();
+				AssertSame();
+				foreach (var run in runs) {
+					run.Split(21);
+					run.Split(28);
+					run.Split(39);
+					run.Split(48);
+				}
+				AssertSame();
 			}
 		}
 

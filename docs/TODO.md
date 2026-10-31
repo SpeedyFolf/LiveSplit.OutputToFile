@@ -13,6 +13,7 @@ When an item is finished, delete its row here and its section in the detail doc,
 
 | Code | Area | Summary | Severity |
 |---|---|---|---|
+| [KLV](Performance.md#klv--keep-the-levels-between-splits) | Levels | Every rewrite rebuilds the levels (`CalculateSegments`), about 4 ms of a split on the 1,317-split GTA SA file (Release), though they only change on a reset, a run edit, a rename, or a change of the comparisons or Subsplits setting | Low |
 
 ## Cleanup — [Cleanup.md](Cleanup.md)
 
@@ -23,8 +24,6 @@ When an item is finished, delete its row here and its section in the detail doc,
 
 | Code | Area | Summary | Severity |
 |---|---|---|---|
-| [RMN](Features.md#rmn--no-list-of-the-remaining-splits) | Split list | Add `RemainingSplits\`, the counterpart of `CompletedSplits\`: every member not yet completed, the current one included (all before the start, none after the finish), without the completed lines' files, with a setting, off by default | Medium |
-| [ALL](Features.md#all--no-list-of-every-split) | Split list | Add a list of every member of each level in every phase, with all of `SplitList\`'s files, with a setting, off by default. Name its folder first: `AllSplits` clashes with the level tag | Medium |
 
 ## Project and README — [Project.md](Project.md)
 
@@ -38,3 +37,4 @@ Known and measured, but not worth fixing. Kept with their evidence and plan, in 
 | Code | Area | Summary | Severity |
 |---|---|---|---|
 | [ATM](WontFix.md#atm--file-writes-arent-atomic) | File writing | Writes aren't atomic. Measured: an OBS text source on a timer file goes blank for 1–2 s about once every 4 h of running timer; on a custom variable that a script changes every frame, about once every 6 min (computed). Revisit only if blanks are seen | Low |
+| [RLT](WontFix.md#rlt--the-long-lists-rebuild-every-line-on-every-split) | Split list | `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` rebuild every line on every split, about 2 µs a line: 21 ms a split with all three on the 1,317-split GTA SA file (Debug). Keeping the text would store per-attempt state that every input must clear. Revisit if splits stutter | Low |

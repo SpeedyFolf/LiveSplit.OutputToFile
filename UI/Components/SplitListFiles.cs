@@ -6,17 +6,20 @@ using System.Text;
 
 namespace LiveSplit.UI.Components.OutputToFile {
 	/// <summary>
-	/// Writes SplitList\ and CompletedSplits\. Both lists write the same files, for different ranges of splits,
-	/// except that CompletedSplits\ leaves out the files only the current and upcoming splits fill.
+	/// Writes SplitList\, CompletedSplits\, RemainingSplits\ and FullSplitList\. Every list writes the same files, for different ranges
+	/// of splits, except that a list leaves out the files that only lines it never has would fill: completed lines, upcoming lines, or scrolling.
+	/// FullSplitList\ is CompletedSplits\ and RemainingSplits\ joined, so their lines are built once for all three.
 	/// </summary>
 	class SplitListFiles : OutputWriter {
 
 		const string HIGHLIGHT_FILL = "███████████████████████████████████████████";
 
-		// Both split lists write the same files, each under its own folder, except the upcoming ones in CompletedSplits\.
+		// Every split list writes the same files, each under its own folder, except those its lines never fill.
 		// The FILE_LIST_* templates are relative to that folder: prefix one of the FOLDER_* constants.
 		const string FOLDER_SPLITLIST = @"SplitList\";
 		const string FOLDER_COMPLETEDSPLITS = @"CompletedSplits\";
+		const string FOLDER_REMAININGSPLITS = @"RemainingSplits\";
+		const string FOLDER_FULLSPLITLIST = @"FullSplitList\";
 
 		const string FILE_LIST_NAMES = @"{1}\Names.txt";
 		const string FILE_LIST_NAMES_RAW = @"{1}\Names_Raw.txt";
@@ -79,13 +82,23 @@ namespace LiveSplit.UI.Components.OutputToFile {
 			for (int lvl = startingLevel; lvl < Levels.Count; lvl++) {
 				if (Settings.OutputSplitList) {
 					var (first, last) = SplitListRange(lvl);
-					WriteSplitListLevel(FOLDER_SPLITLIST, method, lvl, first, last, upcoming: true);
+					WriteList(FOLDER_SPLITLIST, method, lvl, BuildList(method, lvl, first, last, completed: true, upcoming: true, scrolls: true));
 				}
 
+				// CompletedSplits\ and RemainingSplits\ divide the level at the previous split, and FullSplitList\ is the two joined:
+				// each half is built once, if any of the three needs it
+				int previous = GetPreviousSubsplitIndex(lvl);
+				bool full = Settings.OutputFullSplitList;
 				// Every completed split: none before the start, all after the finish. No upcoming lines, so no upcoming files.
-				if (Settings.OutputCompletedSplits) {
-					WriteSplitListLevel(FOLDER_COMPLETEDSPLITS, method, lvl, 0, GetPreviousSubsplitIndex(lvl), upcoming: false);
-				}
+				ListLines done = Settings.OutputCompletedSplits || full
+					? BuildList(method, lvl, 0, previous, completed: true, upcoming: false, scrolls: false) : null;
+				// The rest: all before the start, the current split and those after it, none after the finish. No completed lines, so no completed files.
+				ListLines rest = Settings.OutputRemainingSplits || full
+					? BuildList(method, lvl, previous + 1, Levels[lvl].Indices.Count - 1, completed: false, upcoming: true, scrolls: false) : null;
+				if (Settings.OutputCompletedSplits) WriteList(FOLDER_COMPLETEDSPLITS, method, lvl, done);
+				if (Settings.OutputRemainingSplits) WriteList(FOLDER_REMAININGSPLITS, method, lvl, rest);
+				// Every split, in every phase. It has them all, so it doesn't scroll.
+				if (full) WriteJoinedList(FOLDER_FULLSPLITLIST, method, lvl, done, rest);
 			}
 		}
 
@@ -103,20 +116,22 @@ namespace LiveSplit.UI.Components.OutputToFile {
 			return (first, first + range - 1);
 		}
 
-		// Writes the files of one split list (folder) at one level, for the splits with local indices first to last.
+		// Builds the files of one split list at one level, for the splits with local indices first to last.
+		// Without completed, the files of the completed splits are left out, so first must be after the previous split.
 		// Without upcoming, the files of the current and upcoming splits are left out, so last must be at most the previous split.
-		void WriteSplitListLevel(string folder, TimingMethod method, int lvl, int first, int last, bool upcoming) {
+		// Without scrolls, Highlight_ScrolledToSplit is left out.
+		ListLines BuildList(TimingMethod method, int lvl, int first, int last, bool completed, bool upcoming, bool scrolls) {
 			// -1 for none: no current split before the start or after the finish, nothing completed before the start
 			int currentSubsplitIndex = GetCurrentSubsplitIndex(lvl);
 			int previousSubsplitIndex = GetPreviousSubsplitIndex(lvl);
 			int scrolledToIndex = ScrolledToMember(lvl);
 			string[] finerLevels = Enumerable.Range(lvl + 1, Levels.Count - lvl - 1).Select(LevelTag).ToArray();
-			var lines = new ListLines(Levels.Comparisons, upcoming, lvl + 1, finerLevels);
+			var lines = new ListLines(Levels.Comparisons, completed, upcoming, scrolls, lvl + 1, finerLevels);
 
 			for (int spl = first; spl <= last; spl++) {
 				AppendNames(lines, lvl, spl);
 				if (spl == currentSubsplitIndex) lines.CurrentSplitHighlight.Append(HIGHLIGHT_FILL);
-				// CompletedSplits doesn't have it, though a completed split can be scrolled to
+				// Only a list that scrolls has it, though any list's split can be scrolled to
 				if (spl == scrolledToIndex) lines.ScrolledToSplitHighlight?.Append(HIGHLIGHT_FILL);
 				if (spl <= previousSubsplitIndex) {
 					AppendCompletedLine(lines, method, lvl, spl);
@@ -126,9 +141,21 @@ namespace LiveSplit.UI.Components.OutputToFile {
 				}
 				lines.EndLine();
 			}
+			return lines;
+		}
 
+		// Writes a list's files into its folder
+		void WriteList(string folder, TimingMethod method, int lvl, ListLines lines) {
 			foreach (var file in lines.Files) {
 				MakeFile(folder + file.Template, file.Lines.ToString(), method, lvl, file.ComparisonFolder);
+			}
+		}
+
+		// Writes two lists as one: the lines of done, then those of rest. A file that only one of them has gets a blank line
+		// for each of the other's splits, as one list over both ranges would have.
+		void WriteJoinedList(string folder, TimingMethod method, int lvl, ListLines done, ListLines rest) {
+			foreach (var (template, comparisonFolder) in done.Files.Concat(rest.Files).Select(f => (f.Template, f.ComparisonFolder)).Distinct()) {
+				MakeFile(folder + template, done.Text(template, comparisonFolder) + rest.Text(template, comparisonFolder), method, lvl, comparisonFolder);
 			}
 		}
 
@@ -191,15 +218,18 @@ namespace LiveSplit.UI.Components.OutputToFile {
 
 		/// <summary>
 		/// The files of one split list, built a line at a time: every file gets a line per split, left blank where it has nothing for that split.
-		/// One StringBuilder per file, appended to directly. StringBuilders, not +=: CompletedSplits rebuilds every completed line on every split.
+		/// One StringBuilder per file, appended to directly. StringBuilders, not +=: CompletedSplits rebuilds every completed line on every split,
+		/// and RemainingSplits every other line. FullSplitList joins the two.
 		/// </summary>
 		class ListLines {
 
 			public readonly StringBuilder Names, NamesRaw, Numbers;
+			// Only for completed splits, which RemainingSplits never has. Null there.
 			public readonly StringBuilder RunTimeCurrent, GoldDelta, GoldHighlight;
-			// Only for the current split and those after it, which CompletedSplits never has, and for scrolling, which only
-			// moves SplitList. Null there.
-			public readonly StringBuilder GoldTimeUpcoming, CurrentSplitHighlight, ScrolledToSplitHighlight;
+			// Only for the current split and those after it, which CompletedSplits never has. Null there.
+			public readonly StringBuilder GoldTimeUpcoming, CurrentSplitHighlight;
+			// Only for scrolling, which only moves SplitList. Null elsewhere.
+			public readonly StringBuilder ScrolledToSplitHighlight;
 			// Names_Indent_{depth}, one per depth up to the level's
 			public readonly StringBuilder[] Indents;
 			// Numbers_{level}, one per level finer than the list's, in order
@@ -209,17 +239,26 @@ namespace LiveSplit.UI.Components.OutputToFile {
 
 			// Every file above with its FILE_LIST_* template, and the comparison's folder for a comparison's file
 			readonly List<(string Template, string ComparisonFolder, StringBuilder Lines)> _files = new List<(string, string, StringBuilder)>();
+			// The same files, by template and comparison folder
+			readonly Dictionary<(string, string), StringBuilder> _byFile = new Dictionary<(string, string), StringBuilder>();
 
-			public ListLines(List<(string Name, string Folder)> comparisons, bool upcoming, int depths, string[] finerLevels) {
+			// The number of lines: one per split
+			public int Count { get; private set; }
+
+			public ListLines(List<(string Name, string Folder)> comparisons, bool completed, bool upcoming, bool scrolls, int depths, string[] finerLevels) {
 				Names = Add(FILE_LIST_NAMES);
 				NamesRaw = Add(FILE_LIST_NAMES_RAW);
 				Numbers = Add(FILE_LIST_NUMBERS);
-				RunTimeCurrent = Add(FILE_LIST_FINISH_TIME_LIVE);
-				GoldDelta = Add(FILE_LIST_GOLD_DELTA);
-				GoldHighlight = Add(FILE_LIST_GOLD_HIGHLIGHT);
+				if (completed) {
+					RunTimeCurrent = Add(FILE_LIST_FINISH_TIME_LIVE);
+					GoldDelta = Add(FILE_LIST_GOLD_DELTA);
+					GoldHighlight = Add(FILE_LIST_GOLD_HIGHLIGHT);
+				}
 				if (upcoming) {
 					GoldTimeUpcoming = Add(FILE_LIST_GOLD_TIME_UPCOMING);
 					CurrentSplitHighlight = Add(FILE_LIST_CURRENT_SPLIT_HIGHLIGHT);
+				}
+				if (scrolls) {
 					ScrolledToSplitHighlight = Add(FILE_LIST_SCROLLED_TO_SPLIT_HIGHLIGHT);
 				}
 				Indents = new StringBuilder[depths];
@@ -227,22 +266,29 @@ namespace LiveSplit.UI.Components.OutputToFile {
 					Indents[depth] = Add(IndentFile(depth));
 				}
 				FinerNumbers = finerLevels.Select(level => Add(NumbersFile(level))).ToArray();
-				Comparisons = comparisons.Select(c => new ComparisonLines(c.Name, upcoming, template => Add(template, c.Folder))).ToArray();
+				Comparisons = comparisons.Select(c => new ComparisonLines(c.Name, completed, upcoming, template => Add(template, c.Folder))).ToArray();
 			}
 
 			StringBuilder Add(string template, string comparisonFolder = null) {
 				var lines = new StringBuilder();
 				_files.Add((template, comparisonFolder, lines));
+				_byFile.Add((template, comparisonFolder), lines);
 				return lines;
 			}
 
 			public IEnumerable<(string Template, string ComparisonFolder, StringBuilder Lines)> Files => _files;
+
+			// A file's lines, or a blank line per split if the list doesn't have that file
+			public string Text(string template, string comparisonFolder) {
+				return _byFile.TryGetValue((template, comparisonFolder), out var lines) ? lines.ToString() : new string('\n', Count);
+			}
 
 			public void EndLine() {
 				// '\n', not AppendLine, which would write "\r\n"
 				foreach (var file in _files) {
 					file.Lines.Append('\n');
 				}
+				Count++;
 			}
 		}
 
@@ -252,20 +298,23 @@ namespace LiveSplit.UI.Components.OutputToFile {
 		class ComparisonLines {
 
 			public readonly string Name;
+			// Only for completed splits, which RemainingSplits never has. Null there.
 			public readonly StringBuilder RunDelta, SegmentDelta;
 			public readonly StringBuilder AheadGainedHighlight, AheadLostHighlight, BehindGainedHighlight, BehindLostHighlight;
 			// Only for the current split and those after it, which CompletedSplits never has. Null there.
 			public readonly StringBuilder RunTimeUpcoming, SegmentTimeUpcoming;
 
 			// add makes the StringBuilder of a file, and adds it to the list's files
-			public ComparisonLines(string name, bool upcoming, Func<string, StringBuilder> add) {
+			public ComparisonLines(string name, bool completed, bool upcoming, Func<string, StringBuilder> add) {
 				Name = name;
-				RunDelta = add(FILE_LIST_RUN_DELTA);
-				SegmentDelta = add(FILE_LIST_SEGMENT_DELTA);
-				AheadGainedHighlight = add(FILE_LIST_AHEAD_GAINED_HIGHLIGHT);
-				AheadLostHighlight = add(FILE_LIST_AHEAD_LOST_HIGHLIGHT);
-				BehindGainedHighlight = add(FILE_LIST_BEHIND_GAINED_HIGHLIGHT);
-				BehindLostHighlight = add(FILE_LIST_BEHIND_LOST_HIGHLIGHT);
+				if (completed) {
+					RunDelta = add(FILE_LIST_RUN_DELTA);
+					SegmentDelta = add(FILE_LIST_SEGMENT_DELTA);
+					AheadGainedHighlight = add(FILE_LIST_AHEAD_GAINED_HIGHLIGHT);
+					AheadLostHighlight = add(FILE_LIST_AHEAD_LOST_HIGHLIGHT);
+					BehindGainedHighlight = add(FILE_LIST_BEHIND_GAINED_HIGHLIGHT);
+					BehindLostHighlight = add(FILE_LIST_BEHIND_LOST_HIGHLIGHT);
+				}
 				if (upcoming) {
 					RunTimeUpcoming = add(FILE_LIST_FINISH_TIME_UPCOMING);
 					SegmentTimeUpcoming = add(FILE_LIST_SEGMENT_TIME_UPCOMING);

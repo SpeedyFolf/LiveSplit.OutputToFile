@@ -19,7 +19,7 @@ Code is referred to by member name. The table below says which file each class i
 | `UI/Components/TimerFiles.cs` | Writer for `Timers\`, with its own change check, `HasTimerChanged`. |
 | `UI/Components/CustomVariableFiles.cs` | Writer for `CustomVariables\`, LiveSplit's custom variables, with its own change check, `HaveChanged` (see [Custom variables](#custom-variables)). |
 | `UI/Components/SplitFiles.cs` | Writer for `CurrentSplit\` and `PreviousSplit\`: the previous split's times and deltas, and `Sign.txt`. |
-| `UI/Components/SplitListFiles.cs` | Writer for `SplitList\` and `CompletedSplits\`. |
+| `UI/Components/SplitListFiles.cs` | Writer for `SplitList\`, `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\`. |
 | `UI/Components/Signs.cs` | The `Signs` enum, whose names are the `Sign.txt` values. |
 | `UI/Components/OutputToFileSettings.cs` (+ `.Designer.cs`, `.resx`) | The settings `UserControl` and its XML save/load. |
 | `UI/Components/TimeFormatter.cs` | Converts `TimeSpan?` to display strings with LiveSplit's formatters, at a `FormatAccuracy` (the enum is there too). The writers call it through `OutputWriter.DurationString` and `DeltaString`, which pass the Time Format settings; `TimerFiles` asks for whole seconds. |
@@ -58,7 +58,7 @@ The cache keys in `Update()` are:
 - attempt count, game name, category name;
 - platform name, region name, Uses Emulator, and the variables dictionary (by reference). After downloading the game from speedrun.com, LiveSplit clears the platform, region and variables the game doesn't have, in the background and with no event. It replaces the dictionary rather than changing it ([livesplit-notes.md](livesplit-notes.md#run-metadata-read-in-source)). Edit Splits changes the dictionary in place, but raises `RunManuallyModified`;
 - the `RunManuallyModified` count, the timer event count, the scroll count, the `Run` object (by reference);
-- `FolderPath`, `SplitsBefore`, `SplitsAfter`, the five `Output*` settings, `AllCustomComparisons`, `TickedComparisonsVersion`, `TimeAccuracy` and `DeltaAccuracy`;
+- `FolderPath`, `SplitsBefore`, `SplitsAfter`, the `Output*` settings, `AllCustomComparisons`, `TickedComparisonsVersion`, `TimeAccuracy` and `DeltaAccuracy`;
 - `CurrentPhase`, and `state.CurrentComparison`, since selecting a comparison raises no event;
 - for each comparison written, its time at the last split (`_comparisonChecks`). LiveSplit regenerates its generated comparisons without a timer event after a reset through the server and from its Settings dialog ([livesplit-notes.md](livesplit-notes.md#comparisons-read-in-source-partly-checked-headless)). Their cumulative times then change at the last split, so this key catches it.
 
@@ -87,9 +87,25 @@ LiveSplit fires every event *after* it has updated the timer state, and the rewr
 
 1. `SplitFiles.WriteSplitInformation()`: names and indexes.
 2. `SplitFiles.WriteSplitTimes(RealTime)`, `WriteSplitTimes(GameTime)`: the CurrentSplit and PreviousSplit time files.
-3. `SplitListFiles.WriteSplitLists(RealTime)`, `WriteSplitLists(GameTime)`: for each level, the `SplitList\` window and the `CompletedSplits\` list. `WriteSplitLists` works out each list's range of splits (`SplitListRange` for the window, around the current or the scrolled-to split), and `WriteSplitListLevel` writes the files for that range.
+3. `SplitListFiles.WriteSplitLists(RealTime)`, `WriteSplitLists(GameTime)`: for each level, the `SplitList\` window and the `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` lists. `WriteSplitLists` works out each list's range of splits, `BuildList` builds the lines for that range, and `WriteList` writes them. The ranges are:
+   - `SplitListRange` for the window, around the current or the scrolled-to split;
+   - the first member to the previous one for `CompletedSplits\`;
+   - the member after the previous one to the last for `RemainingSplits\`.
+
+   `FullSplitList\` has no range of its own: `WriteJoinedList` writes it from the lines of the other two, joined. So those two halves are built once each whenever any of the three lists is on.
 
 The steps don't depend on each other: each computes what it needs from the run.
+
+**Cost of the long lists.** `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` rebuild every line they hold on every rewrite, for every level, timing method and comparison, at about 2 µs a line (Release). `CompletedSplits\` and `RemainingSplits\` share the level's members between them, and `FullSplitList\` reuses their lines. So the three together cost about as much as one list of every member.
+- On the 1,317-split, seven-level GTA SA file, mid-run, with only `CurrentComparison` and every other output on, `CompletedSplits\` included, a split's `Update()` takes about:
+  - 14 ms with neither of the other lists;
+  - 18 ms with `RemainingSplits\`;
+  - 21 ms with `FullSplitList\`;
+  - 21 ms with both;
+  - 20 ms with `FullSplitList\` alone, `CompletedSplits\` off.
+- In a Release build, those figures are 10, 14, 16, 17 and 14 ms.
+- The writes take 20–60 ms on the drain task.
+- Measured 2026-10-31, each setup in its own process: in one process the figures grew from run to run.
 
 ### Scrolling
 
@@ -102,7 +118,7 @@ The steps don't depend on each other: each computes what it needs from the run.
   - In the rewrite, after `CalculateSegments()`, `Scroll()` gets the notches since the last rewrite, and whether a timer event (start, split, skip, undo or reset) was counted since then. A timer event first sets the offset back to 0, as LiveSplit does.
   - It then adds the notches and clamps the offset, so the scrolled-to split stays within the run. Notches past either end are dropped, so a notch back always moves the scrolled-to split. It runs on every rewrite, notches or not, so a run that changed length is clamped again.
   - The order of a notch and a timer event in the same frame isn't known; `Scroll()` treats the notch as the later one.
-- Besides the window, only `Highlight_ScrolledToSplit.txt` depends on the offset. `ScrolledToMember` gives the member that holds the scrolled-to split, or −1 while the offset is 0, and `WriteSplitListLevel` fills that line. `ListLines` creates the file only for `SplitList\`, so `CompletedSplits\` doesn't have it. Which lines are completed or current is the same as without scrolling, and a current split scrolled out of the window has no `Highlight_CurrentSplit.txt` line.
+- Besides the window, only `Highlight_ScrolledToSplit.txt` depends on the offset. `ScrolledToMember` gives the member that holds the scrolled-to split, or −1 while the offset is 0, and `BuildList` fills that line. `ListLines` creates the file only for `SplitList\`, so the other lists don't have it. Which lines are completed or current is the same as without scrolling, and a current split scrolled out of the window has no `Highlight_CurrentSplit.txt` line.
 - The offset is in the writer, not in `SplitLevels`, so rebuilding the levels keeps it.
 - A notch that moves no window still costs a rewrite, which changes no file.
 
@@ -263,7 +279,7 @@ Most write functions start from these two helpers, which return a **local** inde
 | Running / Paused, otherwise | local index of the first member whose global index ≥ `CurrentSplitIndex` | that − 1 |
 | Ended | −1 | `Count − 1` |
 
-- The previous index is the last completed member, so the members up to it are the completed ones in every phase. That is the `CompletedSplits\` range, and what `WriteSplitListLevel` treats as completed.
+- The previous index is the last completed member, so the members up to it are the completed ones in every phase. That is the `CompletedSplits\` range, `RemainingSplits\` starts after it, and it's what `BuildList` treats as completed.
 - The last split is a member of every level, so a running timer always has a current member. If none is found, the levels don't match the run, and `GetCurrentSubsplitIndex` throws.
 - The callers check the phase, or −1, before using an index. Check every phase when changing one of them.
 
@@ -296,10 +312,14 @@ Most write functions start from these two helpers, which return a **local** inde
   - `{1}` the level tag (`OutputWriter.LevelTag`);
   - `{2}` the indent index of `Names_Indent_*`, or the finer level's tag of `Numbers_*`. Those files are pre-formatted with `{2}` filled in and `{1}` re-inserted as a literal (`IndentFile` and `NumbersFile` in `SplitListFiles`);
   - `{3}` the comparison's folder, for the files written once per comparison (see [Comparisons](#comparisons)). It always comes right after the method folder.
-- The split list templates (`FILE_LIST_*`) are relative to the list folder. `WriteSplitListLevel` prefixes them with `FOLDER_SPLITLIST` (`SplitList\`) or `FOLDER_COMPLETEDSPLITS` (`CompletedSplits\`), so both lists write the same files, except the files only current and upcoming lines fill, which `CompletedSplits\` has none of.
-- `WriteSplitListLevel` builds a list in a new `ListLines`: one `StringBuilder` field per file, which the helpers append to directly, and a list of each field with its template and comparison folder, for ending lines and writing.
+- The split list templates (`FILE_LIST_*`) are relative to the list folder. `WriteList` and `WriteJoinedList` prefix them with the list's `FOLDER_*` constant (`SplitList\`, `CompletedSplits\`, `RemainingSplits\` or `FullSplitList\`). So every list writes the same files, except those that only lines it never has would fill: `CompletedSplits\` has no current or upcoming lines, `RemainingSplits\` has no completed ones, and only `SplitList\` scrolls.
+- `BuildList` builds a list in a new `ListLines`: one `StringBuilder` field per file, which the helpers append to directly, and a list of each field with its template and comparison folder, for ending lines and writing.
+  - `ListLines` counts its lines (`Count`). `Text` gives a file's lines, or a blank line per split for a file the list doesn't have. `WriteJoinedList` joins two lists' files that way, so in `FullSplitList\` a file that only one half has is blank on the other half's lines, as it would be in one list built over both ranges.
   - The files that depend on a comparison are in a `ComparisonLines` per entry of `Levels.Comparisons` (`ListLines.Comparisons`). Its constructor adds each of them to the list's files, with that comparison's folder.
-  - The upcoming fields (`GoldTimeUpcoming`, `CurrentSplitHighlight`, and each comparison's `RunTimeUpcoming` and `SegmentTimeUpcoming`) exist only when `WriteSplitLists` passes `upcoming`, for `SplitList\`, and are null otherwise; nothing appends to them then, because the range ends at the previous member.
+  - `WriteSplitLists` passes three flags for what a list has, and the fields of what it doesn't have are null:
+    - Without `completed` (`RemainingSplits\`), there are no completed fields: `RunTimeCurrent`, `GoldDelta`, `GoldHighlight`, and each comparison's deltas and four highlights. Nothing appends to them then, because the range starts after the previous member.
+    - Without `upcoming` (`CompletedSplits\`), there are no upcoming fields: `GoldTimeUpcoming`, `CurrentSplitHighlight`, and each comparison's `RunTimeUpcoming` and `SegmentTimeUpcoming`. Nothing appends to them then, because the range ends at the previous member.
+    - `ScrolledToSplitHighlight` exists only with `scrolls`, for `SplitList\`.
   - `Indents` has one per depth up to the level.
   - `EndLine` ends a line in every file at once, so each file gets one line per split, blank where nothing was appended.
 - There are four `MakeFile` overloads, in `OutputWriter`:
@@ -317,7 +337,7 @@ Most write functions start from these two helpers, which return a **local** inde
   - `OnReset` calls `ForgetWrittenFiles()`, so each attempt ends with every file written in full. A file deleted or edited outside LiveSplit comes back when its contents next change, or at the next reset.
   - `WaitForWrites(timeout)` blocks until the drain task is done, including any search for old files. `Dispose()` uses it with 2 seconds; tests use `OutputToFileComponent.WaitForFileWrites()`.
 - **Emptying old files.** Output files that the component no longer writes, because an output was turned off or a level is gone, are written empty once. They are never deleted.
-  - The component's own files are those in the folders named by `OUTPUT_FOLDERS` in the component (`CurrentSplit`, `PreviousSplit`, `SplitList`, `CompletedSplits`, `Timers`, `Variables`, `CustomVariables`), and the root files that match `OUTPUT_ROOT_FILES` (`TotalSplits*.txt`). The other root files are always written. Anything else in those folders counts as the component's, including older releases' paths.
+  - The component's own files are those in the folders named by `OUTPUT_FOLDERS` in the component (`CurrentSplit`, `PreviousSplit`, `SplitList`, `CompletedSplits`, `RemainingSplits`, `FullSplitList`, `Timers`, `Variables`, `CustomVariables`), and the root files that match `OUTPUT_ROOT_FILES` (`TotalSplits*.txt`). The other root files are always written. Anything else in those folders counts as the component's, including older releases' paths.
   - A full rewrite in `Update()` runs between `FileQueue.BeginSweep()` and `EndSweep()`. In between, `Write` records every path it is given, including those it skips as unchanged. Which files get written depends only on the folder, the settings, the levels and the run's (custom) variables, never on the timer phase, so the record is the complete set. A file first written between rewrites would be missing from it, which is why a new custom variable causes a full rewrite ([Custom variables](#custom-variables)). **Every write path must therefore write the same files in every phase.** A file written in only some phases would be emptied by a rewrite in another.
   - `EndSweep` compares the set with the previous rewrite's. Usually they're equal (a phase change) and nothing more happens. When they differ, and on the first rewrite after loading, it drops queued contents and `_written` entries for paths outside the set. Then, once nothing is pending, the drain searches the component's own files and empties every one that isn't in the set and isn't empty already. The set is compared ignoring case.
   - So the first rewrite after loading also empties leftovers from earlier sessions. Other files in the output folder are never touched, and neither is a folder the setting has moved away from. A file that can't be emptied is reported like a failed write, and tried again at the next search.
@@ -329,6 +349,8 @@ Most write functions start from these two helpers, which return a **local** inde
   | `OutputTimer` | `Timers\` |
   | `OutputSplitList` | `SplitList\` |
   | `OutputCompletedSplits` | `CompletedSplits\` |
+  | `OutputRemainingSplits` | `RemainingSplits\` |
+  | `OutputFullSplitList` | `FullSplitList\` |
   | `OutputCustomVariables` | `CustomVariables\` |
   | `OutputSubsplits` | Whether there is more than one level |
 
@@ -348,6 +370,8 @@ Most write functions start from these two helpers, which return a **local** inde
 | `OutputSplitList` | bool | on | binding |
 | `OutputSubsplits` | bool | on | binding |
 | `OutputCompletedSplits` | bool | off | binding |
+| `OutputRemainingSplits` | bool | off | binding |
+| `OutputFullSplitList` | bool | off | binding |
 | `OutputCustomVariables` | bool | off | binding |
 | `AllCustomComparisons` | bool | off | binding |
 | `TimeAccuracy` | `FormatAccuracy` | Seconds | `comboBoxTimeAccuracy_SelectedIndexChanged` |
@@ -369,7 +393,7 @@ The bound properties are bound to their controls with `DataBindings.Add` in the 
   - `checkBoxAllCustomComparisons_CheckedChanged` and `checkedListBoxComparisons_ItemCheck` fill the comparison list and tick comparisons (see [Comparisons](#comparisons));
   - `comboBoxTimeAccuracy_SelectedIndexChanged` and `comboBoxDeltaAccuracy_SelectedIndexChanged` set the accuracies.
 - The class doesn't implement `INotifyPropertyChanged`, so setting a property in code won't update its control while it is shown. `buttonFolderPath_Click` updates the textbox itself for this reason. The next time the control is shown in a new dialog, the bindings read the properties again (seen headless for the textbox, 2026-10-15), so after Cancel restores the settings the dialog shows them on reopening. The drop-down lists aren't bound, so they show a new accuracy only through `SetSettings`, which Cancel calls.
-- XML keys: `FolderPath`, `SplitsBefore`, `SplitsAfter`, `OutputTimer`, `OutputSplitList`, `OutputSubsplits`, `OutputCompletedSplits`, `OutputCustomVariables`, `AllCustomComparisons`, `TimeAccuracy`, `DeltaAccuracy`, and `Comparisons`, which holds a `Comparison` per ticked name. There is no version key; a layout from an older release is recognized by its missing keys, and gets their fallbacks. Layouts saved by earlier builds also have `Version` `0.1`, which nothing reads and LiveSplit's next save drops.
+- XML keys: `FolderPath`, `SplitsBefore`, `SplitsAfter`, `OutputTimer`, `OutputSplitList`, `OutputSubsplits`, `OutputCompletedSplits`, `OutputRemainingSplits`, `OutputFullSplitList`, `OutputCustomVariables`, `AllCustomComparisons`, `TimeAccuracy`, `DeltaAccuracy`, and `Comparisons`, which holds a `Comparison` per ticked name. There is no version key; a layout from an older release is recognized by its missing keys, and gets their fallbacks. Layouts saved by earlier builds also have `Version` `0.1`, which nothing reads and LiveSplit's next save drops.
 - `WriteError` isn't a setting: it holds the latest failed file write, shown in red in `labelWriteError` under the Time Format group, and is neither saved nor hashed. `Update()` sets and clears it through `ShowWriteError` (see "Writing files").
 - The control and `tableLayoutPanelTop` are `AutoSize` with `GrowAndShrink`, so the control is as tall as its groups, plus the error while one is shown. LiveSplit's Layout Settings tab scrolls once the control is taller than 561 px ([livesplit-notes.md](livesplit-notes.md#layout-settings-dialog-read-in-source-size-checked-headless)). `ShowWriteError` hides the label before emptying it: while the control isn't on screen, only the text change makes the table shrink back.
 - `GetSettingsHashCode()` reuses `CreateSettingsNode(null, null)`, which XORs the hashes of the saved values, so two changes can cancel out. That's harmless here: LiveSplit only uses the hash to decide whether to redraw, and this component draws nothing.

@@ -1,6 +1,6 @@
 # Output files
 
-Every file the component writes, what it contains, and when. This reference comes from the `FILE_*` templates in the writer classes (`RunInfoFiles`, `TimerFiles`, `SplitFiles`, `SplitListFiles`, `CustomVariableFiles`) and was checked against the base run in [testing.md](testing.md#the-base-run), which produces 177 files with every output on and no comparison ticked. The README describes the same files for users, in less detail.
+Every file the component writes, what it contains, and when. This reference comes from the `FILE_*` templates in the writer classes (`RunInfoFiles`, `TimerFiles`, `SplitFiles`, `SplitListFiles`, `CustomVariableFiles`) and was checked against the base run in [testing.md](testing.md#the-base-run), which produces 261 files with every output on and no comparison ticked. The README describes the same files for users, in less detail.
 
 How to read the paths:
 
@@ -151,15 +151,25 @@ Each completed line has a fill in at most one of `Highlight_Gold.txt` and one co
 
 The same files as `SplitList`, but the lines cover every completed member: none while the timer isn't running, and all members once the run is finished. No line is current or upcoming, so `Highlight_CurrentSplit.txt` and the `Time_*_Upcoming.txt` files aren't written. It doesn't scroll, so neither is `Highlight_ScrolledToSplit.txt`.
 
+## `RemainingSplits\{level}\` (Remaining splits setting)
+
+The same files as `SplitList`, but the lines cover every member not yet completed, the current one included: all members while the timer isn't running, the current member and those after it during the run, and none once the run is finished, when the files are empty. These are the members `CurrentSplit\Remaining.txt` counts, and the ones `CompletedSplits` doesn't have.
+
+No line is completed, so the files only completed lines fill aren't written: `{method}\Time_Run_Current.txt`, the `Delta_*.txt` files, `{method}\Highlight_Gold.txt` and each comparison's four highlights. It doesn't scroll, so neither is `Highlight_ScrolledToSplit.txt`. `Highlight_CurrentSplit.txt` fills the first line during the run, and no line while the timer isn't running.
+
+## `FullSplitList\{level}\` (Full split list setting)
+
+The same files as `SplitList`, with a line for every member of the level in every phase, as if the window were as long as the level. Lines are completed or upcoming as in `SplitList`, so during the run each file has the lines of `CompletedSplits` followed by those of `RemainingSplits`. It doesn't scroll, since it already has every member, so `Highlight_ScrolledToSplit.txt` isn't written.
+
 ## Outputs turned off, and levels that are gone
 
-Turning off the Timer, Split list, Completed splits or Custom variables setting empties that output's files straight away. The same happens to:
+Turning off the Timer, Split list, Completed splits, Remaining splits, Full split list or Custom variables setting empties that output's files straight away. The same happens to:
 - the files of a level that is gone, because Subsplits was turned off or the splits no longer have that many dashes;
 - `Names_Indent_{n}.txt` for a depth no longer present, and `Numbers_{level}.txt` for a level no longer present;
 - the files in a comparison's folder, when it's unticked, or when the open splits don't have that comparison;
 - the file of a variable, or a custom variable, the splits no longer have.
 
-The files stay, with no contents, and are filled again when the output or level comes back. Leftovers like these from earlier sessions are emptied when the layout is loaded. Nothing is deleted. Only the component's own files are emptied, and only in the folder currently set. Its own files are everything in `CurrentSplit\`, `PreviousSplit\`, `SplitList\`, `CompletedSplits\`, `Timers\`, `Variables\` and `CustomVariables\`, and the `TotalSplits*.txt` files. That includes any other file kept in those folders, and the files older releases wrote there.
+The files stay, with no contents, and are filled again when the output or level comes back. Leftovers like these from earlier sessions are emptied when the layout is loaded. Nothing is deleted. Only the component's own files are emptied, and only in the folder currently set. Its own files are everything in `CurrentSplit\`, `PreviousSplit\`, `SplitList\`, `CompletedSplits\`, `RemainingSplits\`, `FullSplitList\`, `Timers\`, `Variables\` and `CustomVariables\`, and the `TotalSplits*.txt` files. That includes any other file kept in those folders, and the files older releases wrote there.
 
 ## When LiveSplit closes
 

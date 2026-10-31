@@ -6,6 +6,8 @@ What changed in Output to File between releases: the files it writes, what they 
 
 ### Added
 
+- **Now writes a list of the splits not done yet**: `RemainingSplits`, turned on with the new *Remaining splits* setting. It starts at the current split, holds every split before the timer starts, and is empty after the finish. It has the same files as `SplitList`, except `Highlight_ScrolledToSplit.txt` and the files about splits already done: `Time_Run_Current.txt`, the `Delta_…` files, and every highlight but `Highlight_CurrentSplit.txt`.
+- **Now writes a list of every split**: `FullSplitList`, turned on with the new *Full split list* setting. It holds every split at all times, with the same files as `SplitList` except `Highlight_ScrolledToSplit.txt`.
 - **`SplitList` and `CompletedSplits` now number their splits.** The new `Numbers.txt` has each split's number, counting from 1, on the same line as its name. In `SansSubsplits` the sections are numbered 1, 2, 3, as in `CurrentSplit`'s `Number.txt`. Every folder but `AllSplits` also gives each line's number in the folders with more splits, such as `Numbers_AllSplits.txt`, where a section has the number of its last split.
 
 ## 9 (2026-10-27)

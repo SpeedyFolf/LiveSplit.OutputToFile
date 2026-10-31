@@ -75,10 +75,14 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 				run.Settings.OutputTimer = false;
 				run.Settings.OutputSplitList = false;
 				run.Settings.OutputCompletedSplits = false;
+				run.Settings.OutputRemainingSplits = false;
+				run.Settings.OutputFullSplitList = false;
 				run.Tick();
 				Assert.Equal("", run.Read(@"Timers\GameTime\RunTimer.txt"));
 				Assert.Equal("", run.Read(NAMES));
 				Assert.Equal("", run.Read(@"CompletedSplits\AllSplits\Names.txt"));
+				Assert.Equal("", run.Read(@"RemainingSplits\AllSplits\Names.txt"));
+				Assert.Equal("", run.Read(@"FullSplitList\AllSplits\Names.txt"));
 				Assert.Equal("A2", run.Read(@"CurrentSplit\AllSplits\Name.txt"));
 
 				run.Settings.OutputSplitList = true;
