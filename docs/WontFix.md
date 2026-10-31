@@ -50,7 +50,7 @@ Problems that are known and measured, but were decided not to be worth fixing. E
 Each of those would need to clear the stored text. If one were missed, the files would keep a wrong line until the next reset, and the tests only catch the cases someone thought of. The gain only shows on splits files with thousands of lines. Pick it up again if LiveSplit is seen stuttering on splits with a long splits file.
 
 **Evidence.**
-- Measured 2026-10-31, headless, on the 1,317-split, seven-level GTA SA file, mid-run. With `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` all on, a split's `Update()` takes 21 ms (Debug) or 17 ms (Release). With only `CompletedSplits\`, it takes 14 or 10 ms.
+- Measured 2026-11-01, headless, on the 1,317-split, seven-level GTA SA file, mid-run. With `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` all on, a split's `Update()` takes 21 ms (Debug) or 18 ms (Release). With only `CompletedSplits\`, it takes 12 or 9 ms.
 - The lines cost about 2 µs each (Release), spread out:
   - the names, about a quarter;
   - the completed and upcoming values, about 40%;

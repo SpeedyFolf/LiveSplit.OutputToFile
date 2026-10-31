@@ -21,6 +21,8 @@ namespace LiveSplit.UI.Components.OutputToFile {
 		protected LiveSplitState State { get; set; }
 
 		public GraphicsCache Cache { get; set; }
+		// The cache keys the levels are calculated from: a change to one of them also rebuilds the levels
+		readonly GraphicsCache _levelKeys = new GraphicsCache();
 
 		public string ComponentName => "Output to File";
 
@@ -64,7 +66,7 @@ namespace LiveSplit.UI.Components.OutputToFile {
 		// its generated comparisons (Average Segments, …) on reset, after edits and from its Settings dialog. A reset sent through
 		// the server, or the Settings dialog, can change them after the rewrite, with no event; their last split time changes then.
 		List<(string Key, string Name)> _comparisonChecks = new List<(string, string)>();
-		// The run's split names as of the last rewrite. LiveSplit's server renames a split in place (setsplitname,
+		// The run's split names as of the last time the levels were calculated. LiveSplit's server renames a split in place (setsplitname,
 		// setcurrentsplitname), with no event, so Update() compares them every frame.
 		string[] _splitNames = new string[0];
 
@@ -178,8 +180,6 @@ namespace LiveSplit.UI.Components.OutputToFile {
 			_levels.CalculateBestSegments(run, TimingMethod.RealTime);
 			_levels.CalculateBestSegments(run, TimingMethod.GameTime);
 			_comparisonChecks = _levels.Comparisons.Select(c => c.Name).Distinct().Select(name => ("LastSplit " + name, name)).ToList();
-			// The levels, or the phase, may have changed what the segment timers count from
-			_timerFiles.SegmentStartsChanged();
 		}
 
 		void WriteSplits() {
@@ -210,6 +210,7 @@ namespace LiveSplit.UI.Components.OutputToFile {
 			// Before the cache keys: the rename's RunManuallyModified then rewrites with the new name ticked
 			FollowComparisonRenames(state);
 			Cache.Restart();
+			_levelKeys.Restart();
 			// Check for basic 'user loaded or changed splits' etc
 			Cache["AttemptHistoryCount"] = state.Run.AttemptCount;
 			Cache["GameName"] = state.Run.GameName;
@@ -221,39 +222,47 @@ namespace LiveSplit.UI.Components.OutputToFile {
 			Cache["UsesEmulator"] = state.Run.Metadata.UsesEmulator;
 			// Compared by reference. That clean-up replaces the dictionary; Edit Splits changes it in place, and raises RunManuallyModified.
 			Cache["Variables"] = state.Run.Metadata.VariableValueNames;
-			Cache["RunEdits"] = runEdits;
 			Cache["TimerEvents"] = timerEvents;
 			Cache["Scrolls"] = scrolls;
-			// Compared by reference. Close Splits replaces the run without raising RunManuallyModified.
-			Cache["Run"] = state.Run;
 			Cache["FolderPath"] = Settings.FolderPath;
 			Cache["SplitsBefore"] = Settings.SplitsBefore;
 			Cache["SplitsAfter"] = Settings.SplitsAfter;
 			Cache["OutputTimer"] = Settings.OutputTimer;
 			Cache["OutputSplitList"] = Settings.OutputSplitList;
-			Cache["OutputSubsplits"] = Settings.OutputSubsplits;
 			Cache["OutputCompletedSplits"] = Settings.OutputCompletedSplits;
 			Cache["OutputRemainingSplits"] = Settings.OutputRemainingSplits;
 			Cache["OutputFullSplitList"] = Settings.OutputFullSplitList;
 			Cache["OutputCustomVariables"] = Settings.OutputCustomVariables;
 			Cache["TimeAccuracy"] = Settings.TimeAccuracy;
 			Cache["DeltaAccuracy"] = Settings.DeltaAccuracy;
-			Cache["TimerPhase"] = state.CurrentPhase;
+			// What the levels are calculated from. A split, skip, undo or scroll changes none of it, so it keeps them.
+			// A reset updates the best segments, the segment history and the comparisons, even with a start in the same frame.
+			_levelKeys["Resets"] = resets;
+			_levelKeys["RunEdits"] = runEdits;
+			// Compared by reference. Close Splits replaces the run without raising RunManuallyModified.
+			_levelKeys["Run"] = state.Run;
+			_levelKeys["OutputSubsplits"] = Settings.OutputSubsplits;
+			// Not read by the levels. But LiveSplit can regenerate the comparisons after a reset's rewrite, when the server reset,
+			// so the start rebuilds them too. A phase changes too rarely for its rebuild to cost anything.
+			_levelKeys["TimerPhase"] = state.CurrentPhase;
 			// Selecting a comparison raises no event
 			string comparison = state.CurrentComparison;
-			Cache["CurrentComparison"] = comparison;
-			Cache["AllCustomComparisons"] = Settings.AllCustomComparisons;
-			Cache["TickedComparisons"] = Settings.TickedComparisonsVersion;
+			_levelKeys["CurrentComparison"] = comparison;
+			_levelKeys["AllCustomComparisons"] = Settings.AllCustomComparisons;
+			_levelKeys["TickedComparisons"] = Settings.TickedComparisonsVersion;
 			ISegment lastSplit = state.Run[state.Run.Count - 1];
 			foreach (var check in _comparisonChecks) {
-				Cache[check.Key] = lastSplit.Comparisons[check.Name];
+				_levelKeys[check.Key] = lastSplit.Comparisons[check.Name];
 			}
+			bool levelsChanged = _levelKeys.HasChanged || SplitNamesChanged(state.Run);
 			// A full rewrite queues every file the settings and levels call for. Those it doesn't are emptied.
-			bool rewrite = Cache.HasChanged || SplitNamesChanged(state.Run)
+			bool rewrite = levelsChanged || Cache.HasChanged
 				|| (Settings.OutputCustomVariables && _customVariableFiles.FilesChanged());
 			if (rewrite) {
 				_files.BeginSweep();
-				CalculateSegments(comparison);
+				if (levelsChanged) CalculateSegments(comparison);
+				// A split, the phase or rebuilt levels can move what the segment timers count from
+				_timerFiles.SegmentStartsChanged();
 				// A start, split, skip, undo or reset brings the split list back to the current split, as in LiveSplit
 				_splitListFiles.Scroll(scrolls - _scrollsSeen, timerEvents != _timerEventsSeen);
 				_scrollsSeen = scrolls;
@@ -261,7 +270,7 @@ namespace LiveSplit.UI.Components.OutputToFile {
 				_runInfoFiles.Write();
 				WriteSplits();
 			}
-			// After a rewrite, this queues every timer file: CalculateSegments() has called SegmentStartsChanged()
+			// After a rewrite, this queues every timer file: the rewrite has called SegmentStartsChanged()
 			if (Settings.OutputTimer) {
 				_timerFiles.WriteTimer(TimingMethod.RealTime);
 				_timerFiles.WriteTimer(TimingMethod.GameTime);
@@ -275,7 +284,7 @@ namespace LiveSplit.UI.Components.OutputToFile {
 			}
 		}
 
-		// Whether a split's name changed since the last rewrite. A string comparison checks the reference first,
+		// Whether a split's name changed since the levels were last calculated. A string comparison checks the reference first,
 		// so an unchanged run costs one reference comparison per split.
 		bool SplitNamesChanged(IRun run) {
 			if (run.Count != _splitNames.Length) return true;

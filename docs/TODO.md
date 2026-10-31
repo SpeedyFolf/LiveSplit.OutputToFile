@@ -13,7 +13,6 @@ When an item is finished, delete its row here and its section in the detail doc,
 
 | Code | Area | Summary | Severity |
 |---|---|---|---|
-| [KLV](Performance.md#klv--keep-the-levels-between-splits) | Levels | Every rewrite rebuilds the levels (`CalculateSegments`), about 4 ms of a split on the 1,317-split GTA SA file (Release), though they only change on a reset, a run edit, a rename, or a change of the comparisons or Subsplits setting | Low |
 
 ## Cleanup — [Cleanup.md](Cleanup.md)
 

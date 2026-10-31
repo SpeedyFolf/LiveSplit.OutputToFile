@@ -51,22 +51,30 @@ Code is referred to by member name. The table below says which file each class i
 | `RunManuallyModified` | Counts the edit (`_runEdits`), a cache key, so the next `Update()` rewrites everything. Several edits in one frame cost one rewrite. |
 | `ComparisonRenamed` | Queues the old and new names (`_comparisonRenames`). Edit Splits raises it just before the `RunManuallyModified` of the same rename, and the next `Update()` follows it in the ticked comparisons before reading the cache keys (see [Comparisons](#comparisons)). |
 | `OnScrollUp`, `OnScrollDown` | Counts the notch (`_scrolls`: down adds one, up takes one away), a cache key, so the next `Update()` rewrites everything with `SplitList\` scrolled (see [Scrolling](#scrolling)). |
-| `Update()` (every frame) | 0. Read the four counts, before any state. If the latest write error changed, show it in the settings (`ShowWriteError`). If the reset count changed, `FileQueue.ForgetWrittenFiles()`, so each attempt ends with every file written in full. Then `FollowComparisonRenames()`, which moves the ticks of renamed comparisons. <br>1. If any cache key or split name changed (below), or a custom variable was added while Custom variables is on (`CustomVariableFiles.FilesChanged()`), a full rewrite: `FileQueue.BeginSweep()`, `CalculateSegments()`, `SplitListFiles.Scroll()`, `RunInfoFiles.Write()` (game, category, platform, region, emulator, variables, attempts, finished runs, total splits), then `WriteSplits()`. <br>2. If `OutputTimer` is on: `TimerFiles.WriteTimer(RealTime)` and `WriteTimer(GameTime)`. Each returns immediately unless what one of that method's files shows changed since its last write: the run timer's or a level's segment timer's whole second (truncated, sign included), or the timer phase. `TimerFiles` keeps each level's segment start, the time its segment timer counts from, and finds them again only after `SegmentStartsChanged()`, which `CalculateSegments()` calls. A frame therefore costs a subtraction per level, not a search. After a full rewrite every timer file is written, because finding the segment starts again also forgets what the files show. <br>3. If `OutputCustomVariables` is on: `CustomVariableFiles.Write(rewrite)`. It writes the files when a value changed, and all of them in a full rewrite (see [Custom variables](#custom-variables)). <br>4. After a full rewrite: `FileQueue.EndSweep()`, which empties the output files the rewrite didn't write (see [Writing files](#writing-files)). |
+| `Update()` (every frame) | 0. Read the four counts, before any state. If the latest write error changed, show it in the settings (`ShowWriteError`). If the reset count changed, `FileQueue.ForgetWrittenFiles()`, so each attempt ends with every file written in full. Then `FollowComparisonRenames()`, which moves the ticks of renamed comparisons. <br>1. If any cache key or split name changed (below), or a custom variable was added while Custom variables is on (`CustomVariableFiles.FilesChanged()`), a full rewrite: `FileQueue.BeginSweep()`, `CalculateSegments()` if a key of the levels or a split name changed, `TimerFiles.SegmentStartsChanged()`, `SplitListFiles.Scroll()`, `RunInfoFiles.Write()` (game, category, platform, region, emulator, variables, attempts, finished runs, total splits), then `WriteSplits()`. <br>2. If `OutputTimer` is on: `TimerFiles.WriteTimer(RealTime)` and `WriteTimer(GameTime)`. Each returns immediately unless what one of that method's files shows changed since its last write: the run timer's or a level's segment timer's whole second (truncated, sign included), or the timer phase. `TimerFiles` keeps each level's segment start, the time its segment timer counts from, and finds them again only after `SegmentStartsChanged()`, which every full rewrite calls. A frame therefore costs a subtraction per level, not a search. After a full rewrite every timer file is written, because finding the segment starts again also forgets what the files show. <br>3. If `OutputCustomVariables` is on: `CustomVariableFiles.Write(rewrite)`. It writes the files when a value changed, and all of them in a full rewrite (see [Custom variables](#custom-variables)). <br>4. After a full rewrite: `FileQueue.EndSweep()`, which empties the output files the rewrite didn't write (see [Writing files](#writing-files)). |
 | `Dispose()` | One last `Update()`, as above, so that a reset LiveSplit makes just before disposing the component reaches the files ([Lifecycle](#lifecycle)). With the base run mid-run, it takes about 17 ms until every file is written, and with 590 files about 65–110 ms (seen headless, 2026-10-26). |
 
-The cache keys in `Update()` are:
+The cache keys in `Update()` are in two `GraphicsCache`s. A change to any key causes a full rewrite. The keys in `Cache` only rewrite the files:
 - attempt count, game name, category name;
 - platform name, region name, Uses Emulator, and the variables dictionary (by reference). After downloading the game from speedrun.com, LiveSplit clears the platform, region and variables the game doesn't have, in the background and with no event. It replaces the dictionary rather than changing it ([livesplit-notes.md](livesplit-notes.md#run-metadata-read-in-source)). Edit Splits changes the dictionary in place, but raises `RunManuallyModified`;
-- the `RunManuallyModified` count, the timer event count, the scroll count, the `Run` object (by reference);
-- `FolderPath`, `SplitsBefore`, `SplitsAfter`, the `Output*` settings, `AllCustomComparisons`, `TickedComparisonsVersion`, `TimeAccuracy` and `DeltaAccuracy`;
-- `CurrentPhase`, and `state.CurrentComparison`, since selecting a comparison raises no event;
-- for each comparison written, its time at the last split (`_comparisonChecks`). LiveSplit regenerates its generated comparisons without a timer event after a reset through the server and from its Settings dialog ([livesplit-notes.md](livesplit-notes.md#comparisons-read-in-source-partly-checked-headless)). Their cumulative times then change at the last split, so this key catches it.
+- the timer event count, the scroll count;
+- `FolderPath`, `SplitsBefore`, `SplitsAfter`, the `Output*` settings other than `OutputSubsplits`, `TimeAccuracy` and `DeltaAccuracy`.
+
+The keys in `_levelKeys` are what the levels are calculated from, so they also rebuild the levels (`CalculateSegments()`). A split, skip, undo or scroll changes none of them, and keeps the levels:
+- the reset count. A reset updates the best segments, the segment history and the comparisons, and a reset and a start in the same frame leave the phase as it was;
+- the `RunManuallyModified` count, and the `Run` object (by reference);
+- `OutputSubsplits`, `AllCustomComparisons` and `TickedComparisonsVersion`;
+- `state.CurrentComparison`, since selecting a comparison raises no event;
+- for each comparison written, its time at the last split (`_comparisonChecks`). LiveSplit regenerates its generated comparisons without a timer event after a reset through the server and from its Settings dialog ([livesplit-notes.md](livesplit-notes.md#comparisons-read-in-source-partly-checked-headless)). Their cumulative times then change at the last split, so this key catches it;
+- `CurrentPhase`. The levels don't read it, but after a reset through the server, LiveSplit can regenerate the comparisons after the rewrite that follows the reset. The start rebuilds the levels before any split, and a phase changes too rarely for its rebuilds to cost anything.
+
+A change that none of these keys sees reaches the levels at the next phase change, reset or edit. One is known: LiveSplit's Settings dialog can turn on a comparison generator mid-run with no event, so a ticked comparison of that generator gets its folder only then.
 
 Split edits are seen through `RunManuallyModified`: LiveSplit raises it after each change in Edit Splits, which edits the run in place, and after opening splits. Close Splits replaces the run without raising it, and so does every reset after it while LiveSplit is in timer-only mode. The `Run` key catches both. See [livesplit-notes.md](livesplit-notes.md#editing-and-opening-splits-read-in-source).
 
 Split names are checked apart from the cache keys, because LiveSplit's server renames a split in place and raises no event (`setsplitname`, `setcurrentsplitname`).
 - `CalculateSegments()` copies the names into `_splitNames` before the levels and the writers read them. A rename after that copy is seen on the next frame.
-- Every frame, `SplitNamesChanged()` compares each split's name with that copy. A difference causes a full rewrite, which also rebuilds the levels when a rename adds or removes dashes or a `{section}`.
+- Every frame, `SplitNamesChanged()` compares each split's name with that copy. A difference causes a full rewrite and rebuilds the levels, since a rename can add or remove dashes or a `{section}`.
 - The string comparison checks the reference first, so a run without renames costs one reference comparison per split. A name set again to the same text doesn't cause a rewrite.
 - On the 1,317-split GTA SA file, mid-run with every output on, a frame without a rewrite takes about 10 µs instead of 1.5 µs (Release build, measured 2026-10-26).
 
@@ -77,8 +85,8 @@ LiveSplit's custom variables (`Run.Metadata.CustomVariables`) change with no eve
 - **A new variable.** The variables' count differs from the names last written (`FilesChanged()`), which causes a full rewrite. A file first written between rewrites wouldn't be in the set `EndSweep` compares, so a later rewrite that drops it wouldn't empty it (see [Writing files](#writing-files)). Outside a rewrite, `Write()` therefore leaves a copy with more variables than before for that rewrite, the next frame. LiveSplit never removes one; other splits bring their own dictionary, with the `Run` key's rewrite.
 - **The server's thread.** Adding a variable can throw `InvalidOperationException` in the walk or the copy, which both catch. .NET Framework's `Dictionary` counts a new entry before it fills it in, so the copy can also meet an entry with a null name or variable. Either way the copy fails, and the next frame tries again. A full rewrite still queues the last written files, so the sweep doesn't empty them. The copy uses `foreach`: `ToArray()` and `ToList()` go through `CopyTo`, which doesn't notice a change.
 
-So every start, split, skip, undo and reset is written by a full rewrite on the next frame. So are a pause and a resume, through the phase key. Every rewrite rebuilds the levels, which is harmless because they hold nothing about the current attempt (see [Per-level data](#per-level-data-splitlevel)).
-- A mid-run split's `Update()` takes about 0.3 ms with 5 splits and 0.6 ms with 40 (Debug build, every output on).
+So every start, split, skip, undo and reset is written by a full rewrite on the next frame. So are a pause and a resume, through the phase key. A split, skip or undo keeps the levels; a start, reset, pause or resume rebuilds them, so they must hold nothing about the current attempt (see [Per-level data](#per-level-data-splitlevel)).
+- A mid-run split's `Update()` takes about 0.6 ms with 5 splits and 0.8 ms with 40 (Debug build, every output on, measured 2026-11-01).
 - The files reach the disk up to one frame after the event: about 25 ms at `RefreshRate` 40, or later if a LiveSplit message box is open.
 
 LiveSplit fires every event *after* it has updated the timer state, and the rewrite comes after the event, so it sees the new state. Details are in [livesplit-notes.md](livesplit-notes.md).
@@ -98,14 +106,14 @@ The steps don't depend on each other: each computes what it needs from the run.
 
 **Cost of the long lists.** `CompletedSplits\`, `RemainingSplits\` and `FullSplitList\` rebuild every line they hold on every rewrite, for every level, timing method and comparison, at about 2 µs a line (Release). `CompletedSplits\` and `RemainingSplits\` share the level's members between them, and `FullSplitList\` reuses their lines. So the three together cost about as much as one list of every member.
 - On the 1,317-split, seven-level GTA SA file, mid-run, with only `CurrentComparison` and every other output on, `CompletedSplits\` included, a split's `Update()` takes about:
-  - 14 ms with neither of the other lists;
-  - 18 ms with `RemainingSplits\`;
-  - 21 ms with `FullSplitList\`;
+  - 12 ms with neither of the other lists;
+  - 17 ms with `RemainingSplits\`;
+  - 20 ms with `FullSplitList\`;
   - 21 ms with both;
-  - 20 ms with `FullSplitList\` alone, `CompletedSplits\` off.
-- In a Release build, those figures are 10, 14, 16, 17 and 14 ms.
-- The writes take 20–60 ms on the drain task.
-- Measured 2026-10-31, each setup in its own process: in one process the figures grew from run to run.
+  - 19 ms with `FullSplitList\` alone, `CompletedSplits\` off.
+- In a Release build, those figures are 9, 13, 16, 18 and 14 ms.
+- Measured 2026-11-01: the mean of three rounds' medians over 20 splits, each setup in its own process, because in one process the figures grew from run to run. One round's median can be 3 ms off.
+- The writes took 20–60 ms on the drain task (2026-10-31).
 
 ### Scrolling
 
@@ -115,7 +123,7 @@ The steps don't depend on each other: each computes what it needs from the run.
   - So near either end of the run, a notch can move the scrolled-to split without moving the window. In a coarser level, the window moves only when the scrolled-to split enters another member, such as another section.
 - **The offset.** LiveSplit keeps no scroll position, so `SplitListFiles` keeps one, `_scrollOffset`, in splits of the run, down positive.
   - The handlers count the notches in `_scrolls`, a cache key, so each frame with a notch is a full rewrite.
-  - In the rewrite, after `CalculateSegments()`, `Scroll()` gets the notches since the last rewrite, and whether a timer event (start, split, skip, undo or reset) was counted since then. A timer event first sets the offset back to 0, as LiveSplit does.
+  - In the rewrite, after the levels, `Scroll()` gets the notches since the last rewrite, and whether a timer event (start, split, skip, undo or reset) was counted since then. A timer event first sets the offset back to 0, as LiveSplit does.
   - It then adds the notches and clamps the offset, so the scrolled-to split stays within the run. Notches past either end are dropped, so a notch back always moves the scrolled-to split. It runs on every rewrite, notches or not, so a run that changed length is clamped again.
   - The order of a notch and a timer event in the same frame isn't known; `Scroll()` treats the notch as the later one.
 - Besides the window, only `Highlight_ScrolledToSplit.txt` depends on the offset. `ScrolledToMember` gives the member that holds the scrolled-to split, or −1 while the offset is 0, and `BuildList` fills that line. `ListLines` creates the file only for `SplitList\`, so the other lists don't have it. Which lines are completed or current is the same as without scrolling, and a current split scrolled out of the window has no `Highlight_CurrentSplit.txt` line.
@@ -201,7 +209,7 @@ Each `SplitLevel` holds its members, `Indices` (local index → global index), a
 
 `CalculateSegments()` fills both, for both timing methods.
 
-`CalculateSegments()` rebuilds the levels and their arrays in place, in the one `SplitLevels` instance the writers share. It runs on every cache-key change, including every timer phase change. So a level must hold nothing about the current attempt; anything stored there would be wiped by a pause.
+`CalculateSegments()` rebuilds the levels and their arrays in place, in the one `SplitLevels` instance the writers share. It runs when a key of the levels changes (see [When files get written](#when-files-get-written)), and so on every timer phase change. A level must therefore hold nothing about the current attempt; anything stored there would be wiped by a pause.
 
 A dictionary's `.Count` is the number of timing methods (2), not the array length; use `[method].Length`.
 
@@ -220,7 +228,7 @@ A member of several splits, a *section*, gets the fastest time it took within on
    - A missing entry is a hole, left by an edit (clearing a best segment, Clean Sum of Best, moving a split). The next split with an entry starts the count again from itself (its *anchor*), because its entry includes time from before the hole.
 4. A section counts that attempt when the attempt has a time at its last split and at the split before its first (or the section starts the run), and both count from the same anchor. Its time is the difference; the best is the minimum over attempts.
 
-The history changes only on reset and when splits are edited, both of which cause a full rewrite. Each rewrite recomputes the bests anyway; it is cheap. With the 1,317-split, seven-level GTA SA 100% file (25 attempts in its history), it adds up to about 1 ms. A mid-run split's `Update()` there takes about 11 ms instead of 9 ms without section golds, mostly for the extra gold files (Debug build, every output on, measured 2026-10-21).
+The history changes only on reset and when splits are edited, both of which rebuild the levels, and the bests with them. With the 1,317-split, seven-level GTA SA 100% file (25 attempts in its history), computing them takes about 1 ms of a rebuild. A mid-run split's `Update()` there takes about 11 ms instead of 9 ms without section golds, mostly for the extra gold files (Debug build, every output on, measured 2026-10-21).
 
 A section's best can be faster than its splits' best segments added up, when those disagree with the history. In the GTA SA file, an attempt that ran before a split was inserted, or that skipped one, has one entry covering both splits, faster than their two best segments together.
 
@@ -242,10 +250,10 @@ The comparison helpers take the name of one of `Levels.Comparisons`. Computing t
 
 ## Comparisons
 
-The files that compare with a comparison are written once per entry of `SplitLevels.Comparisons`, each time into that comparison's folder inside the method folder (`{3}` in their templates). [output-files.md](output-files.md) lists which files these are. `CalculateSegments()` chooses the comparisons on every rewrite (`ChooseComparisons`):
+The files that compare with a comparison are written once per entry of `SplitLevels.Comparisons`, each time into that comparison's folder inside the method folder (`{3}` in their templates). [output-files.md](output-files.md) lists which files these are. `CalculateSegments()` chooses the comparisons whenever it rebuilds the levels (`ChooseComparisons`):
 
 1. `CurrentComparison`: the comparison selected in LiveSplit, `state.CurrentComparison`.
-   - `Update()` reads it once, as a cache key, and passes it in, so every file of a rewrite uses the same one.
+   - `Update()` reads it once, as a key of the levels, and passes it in, so every file of a rewrite uses the same one.
    - Null, as outside LiveSplit, counts as Personal Best.
    - A name the run doesn't have gives `-` everywhere, because LiveSplit returns an empty `Time` for it.
 2. Then, in the run's order (`Run.Comparisons`), each comparison ticked in the settings. With **All custom comparisons** on, also every custom one (`IsCustomComparison`: in `CustomComparisons`, and not Personal Best, which LiveSplit keeps there too).

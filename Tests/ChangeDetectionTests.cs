@@ -47,6 +47,79 @@ namespace LiveSplit.UI.Components.OutputToFile.Tests {
 			}
 		}
 
+		// The levels are rebuilt only when what they're calculated from changes. Each test below changes one of those mid-run,
+		// with no phase change, and reads a file calculated from the levels.
+
+		const string SEGMENTS = @"FullSplitList\AllSplits\GameTime\CurrentComparison\Time_Segment_Upcoming.txt";
+
+		[Fact]
+		public void EditingTheSplitsMidRunRebuildsTheLevels() {
+			using (var run = TestRun.Base()) {
+				run.Start();
+				run.Split(9.5);
+				run.Edit(r => r[3].PersonalBestSplitTime = TestRun.T(45));
+				Assert.Equal(new[] { "", "0:10", "0:10", "0:15", "0:05" }, run.Lines(SEGMENTS));
+				run.Edit(r => r[2].BestSegmentTime = TestRun.T(7));
+				Assert.Equal(new[] { "", "0:09", "0:07", "0:09", "0:09" }, run.Lines(@"FullSplitList\AllSplits\GameTime\Time_Gold_Upcoming.txt"));
+			}
+		}
+
+		[Fact]
+		public void TurningSubsplitsOffMidRunRebuildsTheLevels() {
+			using (var run = TestRun.Base()) {
+				run.Start();
+				run.Split(9.5);
+				run.Settings.OutputSubsplits = false;
+				run.Tick();
+				Assert.Equal("", run.Read(@"CurrentSplit\SansSubsplits\Name.txt"));
+				Assert.Equal("", run.Read("TotalSplits_SansSubsplits.txt"));
+				Assert.Equal("A2", run.Read(@"CurrentSplit\AllSplits\Name.txt"));
+				run.Settings.OutputSubsplits = true;
+				run.Tick();
+				Assert.Equal("Area A", run.Read(@"CurrentSplit\SansSubsplits\Name.txt"));
+			}
+		}
+
+		[Fact]
+		public void AllCustomComparisonsMidRunRebuildsTheLevels() {
+			using (var run = TestRun.Base(r => r.AddComparison("Target", 9, 19, 29, 39, 49))) {
+				run.Start();
+				run.Split(9.5);
+				run.Settings.AllCustomComparisons = true;
+				run.Tick();
+				Assert.Equal("+0.5", run.Read(@"PreviousSplit\AllSplits\GameTime\Target\RunDifference.txt"));
+				Assert.Equal(new[] { "", "0:10", "0:10", "0:10", "0:10" }, run.Lines(@"FullSplitList\AllSplits\GameTime\Target\Time_Segment_Upcoming.txt"));
+			}
+		}
+
+		[Fact]
+		public void ComparisonChangedWithoutAnEventRebuildsTheLevels() {
+			using (var run = TestRun.Base()) {
+				run.Start();
+				run.Split(9.5);
+				// As LiveSplit's Settings dialog regenerating a comparison: every split time changes, the last one included, with no event
+				for (int i = 0; i < run.State.Run.Count; i++) {
+					run.State.Run[i].PersonalBestSplitTime = TestRun.T(11 * (i + 1));
+				}
+				run.Tick();
+				Assert.Equal(new[] { "", "0:11", "0:11", "0:11", "0:11" }, run.Lines(SEGMENTS));
+			}
+		}
+
+		[Fact]
+		public void ResetAndStartInOneFrameRebuildsTheLevels() {
+			using (var run = TestRun.Base()) {
+				run.Start();
+				run.Split(9);
+				run.Split(18);
+				run.Split(26.5);
+				// Running before and after: only the reset count tells that the history gained this attempt, where Area A took 26.5
+				run.Model.Reset();
+				run.Start();
+				Assert.Equal("0:26", run.Read(@"CurrentSplit\SansSubsplits\GameTime\GoldTime.txt"));
+			}
+		}
+
 		[Fact]
 		public void LiveSplitClearingTheMetadataRewritesTheFiles() {
 			using (var run = TestRun.Base()) {

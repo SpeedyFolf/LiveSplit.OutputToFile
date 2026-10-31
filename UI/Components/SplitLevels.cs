@@ -292,7 +292,8 @@ namespace LiveSplit.UI.Components.OutputToFile {
 	/// <summary>
 	/// One subsplit level: which splits it contains, and its comparisons' segment times and best segments.
 	/// Arrays are indexed by local index, i.e. position in Indices.
-	/// Nothing here may describe the current attempt: CalculateSegments() rebuilds every level on any cache key change, including timer phase changes.
+	/// Nothing here may describe the current attempt: CalculateSegments() rebuilds every level when what they're calculated from changes,
+	/// and on every timer phase change.
 	/// </summary>
 	class SplitLevel {
 
